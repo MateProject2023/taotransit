@@ -29,7 +29,7 @@ import { steps } from '../content/landing';
       {steps.title}
     </h2>
 
-    <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-14 lg:grid-cols-5 lg:gap-5">
+    <ol class="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:mt-14 lg:grid-cols-5 lg:gap-5">
       {
         steps.items.map((step, i) => {
           const filled = i % 2 === 0;
@@ -39,19 +39,34 @@ import { steps } from '../content/landing';
               data-anim-delay={i * 0.06}
               style="--anim-y:48px"
               class:list={[
-                /* pb держит место под цифрой и одновременно задаёт длину
+                /* pb держит место под цифрой и одновременно задаёт излом
                    растяжки: `--fill-fade` в `step-fill` равен этому полю. */
-                'relative flex flex-col overflow-hidden rounded-3xl px-5 pt-6 pb-40 sm:px-6 sm:pt-7 lg:min-h-[24rem] lg:pb-60',
-                /* Пятая карточка в ряду из двух остаётся одна: без этого она
-                   прижата к левому краю, а справа зияет пустая ячейка.
-                   Ширина считается по колонке (половина минус половина
-                   зазора gap-4), чтобы карточка не растянулась на две. */
+                'relative flex flex-col overflow-hidden rounded-3xl px-5 pt-6 pb-36 sm:px-6 sm:pt-7 lg:min-h-[20rem] lg:px-4 lg:pb-44 xl:px-6',
+                /* Пятая карточка одна в ряду только при двух колонках: без
+                   этого она прижата к левому краю, а справа зияет пустая
+                   ячейка. При трёх колонках во втором ряду стоят две карточки
+                   по левому краю — так же, как в оригинале, и центрировать
+                   нечего. Ширина считается по колонке (половина минус
+                   половина зазора gap-4), чтобы карточка не растянулась
+                   на две. */
                 i === steps.items.length - 1 &&
-                  'sm:col-span-2 sm:mx-auto sm:w-[calc(50%-0.5rem)] lg:col-span-1 lg:mx-0 lg:w-auto',
+                  'sm:col-span-2 sm:mx-auto sm:w-[calc(50%-0.5rem)] md:col-span-1 md:mx-0 md:w-auto',
                 filled && 'step-fill',
               ]}
             >
-              <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.25rem]">
+              {/* Кегль срока подобран замером под ширину колонки, а не взят
+                  с оригинала целиком. У оригинала карточки разной ширины
+                  (192…230px в Zero Block) и своя раскладка на каждом пороге:
+                  на 1199 срок там набран мельче, чем на 1440. У нас пять
+                  равных колонок, и ширина у них разная на каждом пороге.
+
+                  Замер (самая длинная строка, «15-25 дней»): при 36px ей
+                  нужно 197px, при 28px — 153, при 24px — 131. Доступно внутри
+                  карточки: 224px при двух колонках, 144 при трёх, 141 при
+                  пяти до 1280px и 160 после. Отсюда четыре ступени. Перенос
+                  здесь дорог не сам по себе: карточки одной высоты, и одна
+                  переехавшая строка поднимает весь ряд. */}
+              <p class="figure-lead text-3xl sm:text-4xl md:text-2xl xl:text-[1.75rem]">
                 {step.duration}
               </p>
               {/* Белый, а не приглушённый `text-on-brand`. Это цена поднятой
