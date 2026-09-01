@@ -23,7 +23,7 @@ The refresh moved the page off the inherited Tilda palette onto the MATE brand t
 - `reference/` — the acceptance material: `tilda-page.html` (original markup), `content-dump.txt` (per-section text), `assets/` (originals pulled from the CDN), `screenshots/` (original at 5 widths), `shots/` (our build, same widths), `competitors/` (ChinaToday, Sinoruss, Forto at 1440 — the category we are steering away from), `hero-source-rutube.mp4`.
 - `scripts/capture-reference.mjs` — re-shoots the original; `scripts/shoot.mjs` — shoots our build. Both take widths as args.
 
-**Interactivity is a handful of tiny vanilla scripts and nothing else**: the video facade, the scroll-top button, the scroll animations, the timeline line, the lead form (`src/scripts/lead.ts`), the custom select (`src/scripts/select.ts`) and the legal dialogs plus consent banner (`src/scripts/legal.ts`). The services accordion is `<details>`, the cases carousel is scroll-snap, the mobile nav is an overflow-scroll strip, the legal documents are native `<dialog>`. No framework islands, no hydration.
+**Interactivity is a handful of tiny vanilla scripts and nothing else**: the video facade, the scroll-top button, the scroll animations, the timeline line, the lead form (`src/scripts/lead.ts`), the custom select (`src/scripts/select.ts`), the legal dialogs plus consent banner (`src/scripts/legal.ts`) and the contact lines' clipboard copy (`src/scripts/contacts.ts`). The services accordion is `<details>`, the cases carousel is scroll-snap, the mobile nav is an overflow-scroll strip, the legal documents are native `<dialog>`, and the contact lines' shutter and marquee are pure CSS. No framework islands, no hydration.
 
 **Stage 1 (current) is layout plus the form's front end** — a faithful, improved rebuild of everything visible, to show the client. The form **backend**, the analytics counter, hosting and the domain cutover are still deferred to stage 2+. Don't build stage-2 machinery while stage 1 is running.
 
@@ -54,7 +54,7 @@ The live Tilda page **is** the spec: `https://taotransit.com/`. It is public —
 | 13 | `rec618180396` | «Как начать работу?» → concierge bot — **rebuilt as «Как мы работаем»**; the anchor `#howtostart` is unchanged |
 | 14 | `rec618938766` | «Рост и развитие» |
 | 15 | `rec629222891` | Final CTA — «Начни с результата вместе с нами!» — **removed by the client**; the form section took its place at the end of the funnel |
-| 16 | `rec616037673` | Footer — контакты, почта, тг-канал, менеджер, консьерж-бот |
+| 16 | `rec616037673` | Footer — контакты, почта, тг-канал, менеджер, консьерж-бот. **Re-laid as full-bleed contact lines ported from `mate`** — see «Контактные полосы» |
 
 Interleaved `t215` records are decorative/spacer blocks (no text).
 
@@ -69,7 +69,8 @@ Interleaved `t215` records are decorative/spacer blocks (no text).
 - 4 logo/decor SVGs (`tao_transit_bb`, `tao_transit_2line_bb` ×2, `tao_black`, `gradient_line`) — vector, nothing to recover
 - 4 square photos 1080×1080 PNG (520–784 KB each)
 - 4 banners 1280×270 PNG (472–600 KB each)
-- `chatmost_ru` screenshot 1448×1086 PNG (1.9 MB)
+- 1 photo 1448×1086 PNG (1.9 MB) — **the founders at the containers**, `src/assets/img/about-founders.png`.
+  ⚠️ Do not trust the CDN filename here: it arrives as `chatmost_ru_17879298.png`, a leftover upload name, and the earlier note in this file called it a screenshot. It is the photo «Иван и Ян, руководители Tao Transit».
 - `Bisma_logo_white2x.png` 1787×748
 - `TAO_favicon.ico`
 
@@ -172,6 +173,22 @@ The client already assembles the complete request body: `requestId`, all 11 trac
 - Known trap: `ALLOWED_ORIGINS` lives in one file but feeds two deploy targets — a change needs **both** a push and a manual `wrangler deploy`, or the receivers drift.
 
 **About the Tilda popup.** The original markup contains a form (`rec629175892`, 11 `t-input`s, `data-tilda-formskey="7a831eecc53726e35e855bb967566459"`), but **nothing on the page opens it** (verified — see CTA table above) and the client confirms no form is in use. Tilda keeps receivers server-side (`formservices[]` is empty in the HTML), so it is worth a glance in the Tilda panel before cutover — but the evidence says this popup is dead markup, not a live channel. Our form is **not** a revival of it: `DESIGN.md` § 6 forbids modals, so the form is inline.
+
+## Контактные полосы
+
+Секция «Контакты» (`src/components/Footer.astro`) — перенесённый из `mate` приём, а не наша выдумка: исходник `../mate/src/app/[lang]/components/Footer/ContactLine.jsx`, стили в `global.css` (`contact-line`, `contact-cover`, `contact-reveal`, `contact-track`).
+
+Полоса во всю ширину экрана закрыта «шторкой» цвета `--panel`; подпись внутри выровнена по `site-container`. При наведении шторка схлопывается по высоте к середине и открывает бегущую строку под ней.
+
+Что отличается от исходника и почему:
+
+- бегущая строка на `@keyframes`, а не на `react-marquee-slider` — зависимость ради одного эффекта не нужна. Дорожка содержит **два одинаковых набора** и уезжает на `-50%`: стык приходится ровно на повтор. Если менять число повторов — менять `REPEAT` в компоненте, но не трогать `-50%`;
+- дорожка крутится только пока полоса открыта (`animation-play-state`), иначе анимация идёт вхолостую под непрозрачной шторкой;
+- у почты в бегущей строке настоящий адрес (`reveal` в `footer.links`), а не подпись: наведение показывает адрес, не открывая почтовый клиент.
+
+Схлопывание по `:hover` заперто в `@media (hover: hover)` — на тач-экране `:hover` залипает после тапа и шторка остаётся открытой. Правило для `:focus-visible` вынесено из этого условия намеренно: фокус с клавиатуры бывает и там, где курсора нет.
+
+Клик по почте кладёт адрес в буфер (`src/scripts/contacts.ts`) и на две секунды подменяет подпись — как в `mate`, потому что почтовый клиент настроен не у всех. `mailto:` при этом не отменяется.
 
 ## Юридические документы
 

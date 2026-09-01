@@ -95,11 +95,14 @@ const indexable = isProductionHost(Astro.site);
       import { initLeadForm } from '../scripts/lead';
       import { initSelects } from '../scripts/select';
       import { initLegal } from '../scripts/legal';
+      import { initContacts } from '../scripts/contacts';
+      import { footer } from '../content/landing';
       initAnimations();
       initTimeline();
       initLeadForm();
       initSelects();
       initLegal();
+      initContacts(footer.copied);
     </script>
   </body>
 </html>

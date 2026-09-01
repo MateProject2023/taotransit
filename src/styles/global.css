@@ -487,3 +487,97 @@
     transform: none;
   }
 }
+
+/* ─── Контактные полосы ───────────────────────────────────────────────
+   Приём перенесён из mate (`Footer/ContactLine.jsx`): строка во всю
+   ширину экрана закрыта «шторкой» цвета панели, при наведении шторка
+   схлопывается к середине и открывает бегущую строку под ней.
+
+   Отличие от исходника: там бегущую строку крутит react-marquee-slider,
+   здесь — одни keyframes. Дорожка содержит два одинаковых набора и
+   уезжает ровно на половину своей ширины, поэтому стык не виден. */
+@utility contact-line {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 4.5rem;
+  border-bottom: 1px solid var(--color-line);
+
+  @media (width >= 640px) {
+    height: 5.5rem;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -4px;
+  }
+}
+
+/* Шторка. Схлопывается по высоте от обоих краёв к середине: содержимое
+   центрировано и обрезается, как в оригинале приёма. */
+@utility contact-cover {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  overflow: hidden;
+  background-color: var(--color-panel);
+  transition: height 250ms var(--ease-out-quart);
+
+  /* Наведение — только там, где курсор есть: на тач-экране :hover
+     залипает после тапа и шторка остаётся открытой. Фокус с клавиатуры
+     из этого условия вынесен намеренно — он бывает и без курсора. */
+  @media (hover: hover) {
+    .contact-line:hover & {
+      height: 0;
+    }
+  }
+
+  .contact-line:focus-visible & {
+    height: 0;
+  }
+}
+
+/* Слой под шторкой: земля страницы и бегущая строка акцентом. */
+@utility contact-reveal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: var(--color-accent);
+}
+
+@utility contact-track {
+  display: flex;
+  width: max-content;
+  flex: none;
+  align-items: center;
+  gap: 2.5rem;
+  padding-inline-end: 2.5rem;
+  /* крутится только пока строка открыта — иначе анимация идёт вхолостую
+     под непрозрачной шторкой на каждом кадре */
+  animation: contact-scroll 24s linear infinite paused;
+
+  .contact-line:hover &,
+  .contact-line:focus-visible & {
+    animation-play-state: running;
+  }
+}
+
+@keyframes contact-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-track {
+    animation: none;
+  }
+}

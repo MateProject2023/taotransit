@@ -6,79 +6,109 @@ import { footer, site, footerLegal } from '../content/landing';
 
 const href = (key: keyof typeof site) =>
   key === 'email' ? `mailto:${site.email}` : site[key];
+
+/* Дорожка бегущей строки: два одинаковых набора, поэтому сдвиг на -50%
+   в @keyframes попадает точно на стык и повтор не заметен. */
+const REPEAT = 8;
 ---
 
-<footer id="contacts" class="site-container scroll-mt-24 pt-14 pb-28 sm:pt-20 sm:pb-24">
-  {/*
-    Ссылки прижаты вправо на любой ширине: выключка вправо включалась только
-    с 1024px, поэтому на планшете строки обрывались посередине колонки.
-    Ограничение пункта в 28rem осталось намеренно — оно держит длину линии
-    под ссылкой, а к правому краю блок прижимает `items-end`.
-  */}
-  <div class="grid gap-10 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-8">
+{/*
+  Контакты — перенесённый из mate приём (`Footer/ContactLine.jsx`):
+  полосы во всю ширину экрана вместо колонки ссылок у правого края.
+  Прежняя раскладка оставляла пустыми две трети ширины; здесь ширина
+  занята по построению, а сама полоса — крупная цель для курсора.
+*/}
+<footer id="contacts" class="scroll-mt-24 pt-14 sm:pt-20">
+  <div class="site-container">
     <h2 class="text-4xl leading-none font-black sm:text-5xl">{footer.title}</h2>
+  </div>
 
-    <ul class="flex flex-col items-end gap-6">
-      {
-        footer.links.map((link) => (
-          <li class="w-full max-w-md">
+  <ul class="mt-8 border-t border-line sm:mt-10">
+    {
+      footer.links.map((link) => {
+        const isEmail = link.href === 'email';
+        const running = 'reveal' in link ? link.reveal : link.label;
+        return (
+          <li>
             <a
               href={href(link.href as keyof typeof site)}
-              {...link.href === 'email' ? {} : { target: '_blank', rel: 'noopener' }}
-              class="group block text-right text-xl transition-colors hover:text-accent sm:text-2xl"
+              {...isEmail ? {} : { target: '_blank', rel: 'noopener' }}
+              class="contact-line group"
+              data-contact
+              data-copy={isEmail ? site.email : undefined}
             >
-              {link.label}
-              {/* градиентная линия под пунктом — как в оригинале */}
-              <span
-                class="mt-2 block h-0.5 w-full bg-linear-to-r from-transparent to-accent-line transition-opacity group-hover:opacity-70"
-                aria-hidden="true"
-              />
+              {/* Слой под шторкой. Он декоративный: подпись и адрес
+                  уже есть в шторке, дублировать их для чтения с экрана
+                  незачем. */}
+              <span class="contact-reveal" aria-hidden="true">
+                <span class="contact-track">
+                  {Array.from({ length: REPEAT * 2 }).map(() => (
+                    <span class="flex items-center gap-4 text-xl whitespace-nowrap sm:text-3xl">
+                      {running}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="size-5 shrink-0 sm:size-7">
+                        <path d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </span>
+                  ))}
+                </span>
+              </span>
+
+              <span class="contact-cover">
+                <span class="site-container flex items-center justify-between gap-6">
+                  <span class="text-xl whitespace-nowrap sm:text-3xl" data-contact-label>{link.label}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="size-5 shrink-0 sm:size-7" aria-hidden="true">
+                    <path d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              </span>
             </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+
+  <div class="site-container pb-28 sm:pb-24">
+    {/*
+      Нижняя строка: марка слева, авторство справа, оба логотипа стоят на одной
+      линии дна (`items-end`). «Created by» — подпись над логотипом бюро.
+    */}
+    <div class="mt-14 flex flex-wrap items-end justify-between gap-x-6 gap-y-8 sm:mt-20">
+      <Image src={logo} alt="TAO Transit" loading="lazy" class="w-56 sm:w-72 lg:w-80" />
+
+      <a
+        href={site.bisma}
+        target="_blank"
+        rel="noopener"
+        class="flex flex-col items-end gap-2"
+      >
+        <span class="text-sm text-fg-muted sm:text-base">{footer.createdBy}</span>
+        <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
+      </a>
+    </div>
+
+    {/*
+      Документы. Одной колонкой под маркой, по левому краю, мелко и плотно:
+      это выходные данные, а не пункты меню. Открываются модальными окнами —
+      отдельных адресов у них пока нет, см. CLAUDE.md § «Юридические документы».
+    */}
+    <ul class="mt-3 flex flex-col items-start gap-1">
+      {
+        footerLegal.map((doc) => (
+          /* flex у пункта убирает строчную распорку: у inline-кнопки под ней
+             остаётся собственный интерлиньяж, и шаг между строками получался
+             вдвое больше заданного gap. */
+          <li class="flex">
+            <button
+              type="button"
+              data-legal-open={doc.id}
+              class="rounded-sm text-[0.6875rem] leading-snug font-normal text-fg-faint underline decoration-[0.5px] underline-offset-2 transition-colors hover:text-fg sm:text-xs"
+            >
+              {doc.label}
+            </button>
           </li>
         ))
       }
     </ul>
   </div>
-
-  {/*
-    Нижняя строка: марка слева, авторство справа, оба логотипа стоят на одной
-    линии дна (`items-end`). «Created by» — подпись над логотипом бюро.
-  */}
-  <div class="mt-16 flex flex-wrap items-end justify-between gap-x-6 gap-y-8 sm:mt-20">
-    <Image src={logo} alt="TAO Transit" loading="lazy" class="w-56 sm:w-72 lg:w-80" />
-
-    <a
-      href={site.bisma}
-      target="_blank"
-      rel="noopener"
-      class="flex flex-col items-end gap-2"
-    >
-      <span class="text-sm text-fg-muted sm:text-base">{footer.createdBy}</span>
-      <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
-    </a>
-  </div>
-
-  {/*
-    Документы. Одной колонкой под маркой, по левому краю, мелко и плотно:
-    это выходные данные, а не пункты меню. Открываются модальными окнами —
-    отдельных адресов у них пока нет, см. CLAUDE.md § «Юридические документы».
-  */}
-  <ul class="mt-3 flex flex-col items-start gap-1">
-    {
-      footerLegal.map((doc) => (
-        /* flex у пункта убирает строчную распорку: у inline-кнопки под ней
-           остаётся собственный интерлиньяж, и шаг между строками получался
-           вдвое больше заданного gap. */
-        <li class="flex">
-          <button
-            type="button"
-            data-legal-open={doc.id}
-            class="rounded-sm text-[0.6875rem] leading-snug font-normal text-fg-faint underline decoration-[0.5px] underline-offset-2 transition-colors hover:text-fg sm:text-xs"
-          >
-            {doc.label}
-          </button>
-        </li>
-      ))
-    }
-  </ul>
 </footer>

@@ -1,5 +1,14 @@
 ---
+import { Image } from 'astro:assets';
 import { services } from '../content/landing';
+import buyout from '../assets/img/svc-buyout.png';
+import consolidation from '../assets/img/svc-consolidation.png';
+import inspection from '../assets/img/svc-inspection.png';
+import delivery from '../assets/img/svc-delivery.png';
+
+/* Баннеры оригинала: они есть ровно у четырёх пунктов из семи
+   (accordion 1, 2, 3 и 6 в разметке Тильды), у остальных их не было. */
+const art = { buyout, consolidation, inspection, delivery };
 ---
 
 {/*
@@ -42,6 +51,18 @@ import { services } from '../content/landing';
               </span>
             </summary>
             <div class="pb-6 sm:pb-7">
+              {'image' in item && (
+                /* Полоса 1280×270 — как в оригинале: над текстом, во всю
+                   ширину колонки. Ленивая: пункт закрыт при загрузке. */
+                <Image
+                  src={art[item.image as keyof typeof art]}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  sizes="(min-width: 1200px) 1200px, 100vw"
+                  class="mb-5 w-full rounded-2xl"
+                />
+              )}
               {item.body.map((p) => (
                 <p class="max-w-(--container-prose) leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
               ))}
