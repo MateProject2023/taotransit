@@ -8,9 +8,17 @@ A **rebuild of the taotransit.com landing page** — currently a Tilda one-pager
 
 **Current state: stage 1 (layout) is built, the design refresh on top of it is done, and the lead form's front end is in.** Astro 7 + Tailwind 4, all 13 visible sections rebuilt, zero external requests, no console errors. `PLAN.md` holds the agreed staging.
 
-The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`. **The site is now light**, on the client's decision — the package is applied as a light system, not ported to a dark ground. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). `DESIGN.md` § 7 records all six passes; the sixth is the light migration and it names what is still open.
+The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`. **The site is now light**, on the client's decision — the package is applied as a light system, not ported to a dark ground. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). `DESIGN.md` § 7 records all eight passes; the sixth is the light migration, the eighth brings back the original's gradients and rebuilds the surface map, and it names what is still open.
 
-**The Two Surfaces Rule governs every section.** There are exactly two surfaces — paper `#F9FAFD` and brand `#2C3192` — and each section belongs entirely to one of them. No half-tones, no grey section grounds, no gradients between surfaces. `--panel: #2B2E39` is an inset (contact-line shutters, video backing), not a third surface. The section-by-section map is a table in `DESIGN.md` § 2; read it before adding or reordering a section.
+**The Two Surfaces Rule governs every section.** There are exactly two surfaces — paper `#F9FAFD` and brand `#2C3192` — and each section belongs entirely to one of them. No half-tones, no grey section grounds, no third background value: `--panel: #2B2E39` is **gone** from the build (the client had the contact-line shutters repainted brand, which was its last use).
+
+**Surfaces now strictly alternate**, the one doubled place being the first screen plus «За все время мы успели…» — one colour field, because the achievements continue the hero's claim. The section-by-section map is a table in `DESIGN.md` § 2; read it before adding or reordering a section. It was rebuilt in the eighth pass, and moving one section's surface now costs a rethink of its neighbours.
+
+⚠️ **One amendment, made by the client: a card may dissolve into its own section's fill** — the gradient in «Этапы работы» and in the achievement pills, both ports of the original. The rule still stands (no gradient as a *section* ground), but the stops are **re-measured, not ported**: on the original the fade ran dark→dark and any text colour read anywhere along it; here it runs into white, and its middle is a light lilac where white text drops below 4.5:1 at 30% white and ink drops below 4.5:1 at 65%. Hence the single rule for both utilities — **the fade ends where the text begins**. In the pills that boundary is literally one number seen from two sides: the gradient's transparent stop at 48% and the text block's `max-w-[52%]`. Change one and you must change the other.
+
+⚠️ **`--color-on-brand` cannot stand on a fade at all** — 6.10:1 on flat brand, below 4.5:1 at 11% white under it. That is why the step description is white, not muted. Measured table in `DESIGN.md` § 2.
+
+`scripts/contrast-audit.mjs` cannot see any of this (it reads `background-color`); `scripts/gradient-audit.mjs` measures the actual painted pixels.
 
 **There are no shadows at all.** Elevation comes from a white card on paper. The `glow-*` utilities are gone; don't reintroduce them.
 
@@ -111,7 +119,7 @@ Vendored at the repo root, 216 KB with the font. `tokens.css` (46 CSS variables,
 
 Still **don't `@import tokens.css`**: Tailwind v4 is CSS-first and the tokens live in the `@theme` block of `src/styles/global.css`, where they also become utility classes. The package stays the reference, not a dependency.
 
-Two things from the package that are easy to miss: hover moves **down** in lightness, never up (brand button → `#1D1A77`; white button → paper fill plus deep-violet text); and `--panel: #2B2E39` really is the rare dark inset it is described as — here it is only the contact-line shutters and the video backing.
+Two things from the package that are easy to miss: hover moves **down** in lightness, never up (brand button → `#1D1A77`; white button → paper fill plus deep-violet text); and `--panel: #2B2E39`, the package's "rare dark inset", **has no use left here** — the video backing went to paper with the light migration, the contact-line shutters went brand in the eighth pass, and the token was removed rather than left to rot. Bringing it back means introducing a third surface.
 
 ⚠️ Two package figures don't hold as written and were re-measured: `#6C6E78` is 5.1:1 on **white** but 4.86:1 on paper, and a white card on paper is 1.03:1 — enough for large planes, not enough for a card that has to read as an object (timeline cards sit on the snake line, case cards sit in a scroll strip). Those get a `--line` hairline. See "Правило белой карточки" in `DESIGN.md` § 2.
 
@@ -186,7 +194,9 @@ The client already assembles the complete request body: `requestId`, all 11 trac
 
 Секция «Контакты» (`src/components/Footer.astro`) — перенесённый из `mate` приём, а не наша выдумка: исходник `../mate/src/app/[lang]/components/Footer/ContactLine.jsx`, стили в `global.css` (`contact-line`, `contact-cover`, `contact-reveal`, `contact-track`).
 
-Полоса во всю ширину экрана закрыта «шторкой» цвета `--panel`; подпись внутри выровнена по `site-container`. При наведении шторка схлопывается по высоте к середине и открывает бегущую строку под ней.
+Полоса во всю ширину экрана закрыта брендовой «шторкой»; подпись внутри выровнена по `site-container`. При наведении шторка схлопывается по высоте к середине и открывает бегущую строку под ней — то есть наведение переворачивает пару поверхностей: фиолет уходит, бумага выходит. Прежний серо-синий `#2B2E39` снят по просьбе заказчика, и вместе с ним из сборки ушёл сам токен `--panel`.
+
+Полосы стоят вплотную и теперь все брендовые, поэтому между ними нужна волосяная линия `--color-line-on-brand`: без неё четыре шторки сливаются в один прямоугольник.
 
 Что отличается от исходника и почему:
 
@@ -269,13 +279,14 @@ Note for stage 2: a Vercel deploy also changes the form's back end. Vercel suppo
 
 - Copy lives in **one content module**, not inline in markup — the page is 100% Russian marketing copy that the client will revise.
 - **Anchors point where the original pointed**, and it is not obvious: Tilda hangs them on empty spacer records *before* the section. `#adventages` → «Почему мы?» (not the achievements strip, which has no anchor), `#services` → the services accordion, `#contacts` → footer. Verified against the original markup, don't "fix" them by name.
-- **Seven scope passes are already closed.** The rebuild was "responsive behaviour and contrast only"; the refresh after it moved palette, typography, density and states onto the MATE tokens and re-authored four sections («Почему мы?», «Ценности», «Этапы работы», «Достижения»); the third added the lead form and, with it, the site's second contact channel; the fourth promoted the form to the page's primary destination (its own `#lead` section) and added the legal layer; the fifth rebuilt the tail — «Как начать работу ?» became «Как мы работаем» and was re-laid as a single vertical line, the form moved up behind it, and the final-CTA section was removed; **the sixth moved the whole site from the dark palette to the light MATE system** and, with it, removed «перевод средств» from every section and relabelled the form CTAs; the seventh rebuilt the four structural items the client had flagged — first screen geometry, «Этапы работы» as staggered cards, «Как мы работаем» in two columns, and the cases strip's alignment and navigation. Imagery was left untouched throughout and still should be; the only asset that changed is the bot video's cover frame, taken from the same clip.
+- **Eight scope passes are already closed.** The rebuild was "responsive behaviour and contrast only"; the refresh after it moved palette, typography, density and states onto the MATE tokens and re-authored four sections («Почему мы?», «Ценности», «Этапы работы», «Достижения»); the third added the lead form and, with it, the site's second contact channel; the fourth promoted the form to the page's primary destination (its own `#lead` section) and added the legal layer; the fifth rebuilt the tail — «Как начать работу ?» became «Как мы работаем» and was re-laid as a single vertical line, the form moved up behind it, and the final-CTA section was removed; **the sixth moved the whole site from the dark palette to the light MATE system** and, with it, removed «перевод средств» from every section and relabelled the form CTAs; the seventh rebuilt the four structural items the client had flagged — first screen geometry, «Этапы работы» as staggered cards, «Как мы работаем» in two columns, and the cases strip's alignment and navigation; **the eighth brought back two gradients from the original** (the step cards and the achievement pills), repainted the contact shutters brand, re-laid «Почему мы?» as a bento, and rebuilt the surface map around all of that. Imagery was left untouched throughout and still should be; the only asset that changed is the bot video's cover frame, taken from the same clip.
 
 Copy has been touched three times, always on the client's explicit instruction: the fifth pass rewrote that one section's heading and lead; the sixth changed the «Почему мы?» guarantee line, the form's heading and consent line, and deleted every mention of money transfers. Everything else is still the original Tilda wording. Don't start an eighth pass without asking. **All client feedback is now closed**; what remains open is on the client's side, not ours (legal requisites, their own Metrica counter, the form's receivers).
 - Reference screenshots at every original breakpoint are the acceptance artifact for *fidelity* questions — capture before, compare after. Since the light migration they are **no longer the acceptance criterion for colour at all**; for anything visual, `DESIGN.md` is. They remain useful for layout, composition and copy.
-- **Measure colour, don't look at it.** Three tools, all committed:
+- **Measure colour, don't look at it.** Four tools, all committed:
   - `scripts/contrast-audit.mjs [ширины]` — walks every text node on the built page and checks it against the colour actually painted underneath, at each width. Exits non-zero on any AA failure. ⚠️ It parses `oklab()` on purpose: Tailwind v4 resolves `color-mix` results into that notation, and a naive `rgb()` parser reads the white 90% header pill as near-black and reports eight phantom failures.
   - `scripts/contrast.mjs "#111 #F9FAFD" …` — one WCAG pair from the command line.
+  - `scripts/gradient-audit.mjs [ширины]` — the same question for text standing on a gradient, which the audit above is blind to: it hides the text (`visibility: hidden`, the background stays), screenshots its box and reads the real pixels. ⚠️ It scrolls with `block: 'center'`, not `scrollIntoViewIfNeeded` — otherwise the fixed header lies over the box being measured and its `ring-line` lands in the sample as "the background under the text" (3.32:1 out of thin air; caught exactly that way).
   - ⚠️ The audit skips `aria-hidden="true"` subtrees. Exactly one thing relies on that: the embossed roman numerals in «Этапы работы», at 1.34:1 by design (the `<ol>` already carries step order). **Never hide real text behind `aria-hidden` to pass the audit.**
   - `scripts/compare-feedback.mjs` — shoots the live original, our build and mate's contact block at the same places and states into `reference/compare/` (git-ignored — regenerate, don't commit).
 
@@ -300,6 +311,8 @@ Three things from them worth carrying in your head:
 
 **Типографика.** Заголовки секций — **96px / 900 / line-height 1** (утилита `section-title`), «Все началось в 2013…» — 48/900. Подзаголовки карточек в «Почему мы?» и «Ценностях» — **400, не жирные** (частая ошибка на глаз). Текст пилюль достижений — 24/900, «1 день» в этапах — 36/900, заголовки кейсов и тарифов — 36/900. Кнопки — 24/700. Подписи hero — 20/400 и 22/400. Меню — Black.
 
+**Градиенты оригинала.** Их шесть, и два из них возвращены заказчиком в восьмом заходе — карточки «Этапов» (`linear-gradient(0turn, #5b35e5 0%, rgba(17,16,28,0) 95%)`, ровно три применения: залита каждая вторая карточка) и пилюли достижений (`linear-gradient(.25turn|.75turn, #5b35e5 23%, transparent 100%)`, по два в каждую сторону: хвост всегда гаснет в сторону 3D-объекта). ⚠️ Числа стопов **не переносятся**: на светлой системе они ставят текст на полутон. Пересчёт и замеры — `DESIGN.md` § 2.
+
 **Свечения оригинала** (`box-shadow`, spread всегда 0). Их девять, и **ни одно не воспроизводится** — на светлой системе теней нет вовсе. Таблица оставлена для чтения эталонных снимков:
 
 | Где | Значение |
@@ -315,6 +328,10 @@ Three things from them worth carrying in your head:
 **Анимации появления.** В оригинале это `data-animate-style` + `distance` + `delay`, duration везде 1 с. Повторено ровно там, где есть в оригинале, с теми же дистанциями: достижения — вылет с боков на 330px, «Почему мы?» и «Ценности» — ±100px, шапка «Услуг» — 87px справа, этапы — 164px снизу; задержки 0.1–0.4 с.
 
 Как это устроено: элемент помечается `data-anim` и inline-стилем `--anim-x` / `--anim-y`. **Стартовое состояние задаёт CSS** (`.anim [data-anim]` в `global.css`), класс `anim` вешает инлайн-скрипт в `<head>`. Так без JS контент виден сразу, а с JS нет прыжка после гидратации — раньше начальное состояние ставилось из скрипта и давало CLS 0.086.
+
+**Прочерчивание линеек** (`data-rule`) — второй вид того же появления, добавленный заказчиком в восьмом заходе: линия идёт `scaleX(0) → 1` от левого края за 800 мс. Разделители аккордеона «Услуги» и выносные линии тарифной сетки ведут себя как змейка — до них не дошли, их нет. Наблюдатель тот же, отдельного прохода нет, различается только целевое преобразование. ⚠️ Внутрь `<details>` линейку класть нельзя: браузер прячет всё, кроме `<summary>`, пока пункт закрыт, — поэтому у каждого пункта аккордеона своя обёртка.
+
+⚠️ **Быстрая программная прокрутка не запускает появления.** IntersectionObserver считает пересечения раз в кадр, и `window.scrollTo` в тесном цикле без `requestAnimationFrame` не даёт браузеру ни одного кадра: элементы остаются при `opacity: 0`, а сдвинутые на 330px пилюли раздувают `body.scrollWidth` до 1525. Оба эффекта — артефакт замерялки, а не страницы. Любой скрипт, который листает страницу перед снимком, обязан ждать кадр (см. `scripts/gradient-audit.mjs`).
 
 **Змейка «Все началось в 2013…».** Шесть кривых Безье — это `path` из SVG оригинала, нормализованные к `viewBox 0 0 669 797` (`src/content/timeline-geometry.ts` вместе с позициями карточек и меток и углами их поворота). На ≥1280px область таймлайна **фиксирована в 1057px** — ровно как в оригинале; растягивание искажало стыки линий с карточками. Ниже 1280px абсолютная раскладка не выживает, там вертикальная ось.
 

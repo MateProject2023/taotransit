@@ -3,11 +3,12 @@ import { pricing, site } from '../content/landing';
 ---
 
 {/*
-  Брендовая заливка, обе карточки белые. Раньше бумажной была только
-  карточка комиссии, а тарифная стояла панелью — на светлой системе это
-  дало бы серую поверхность внутри секции, прямой запрет пакета.
+  Секция на бумаге, обе карточки белые с волосяной рамкой. Раньше здесь
+  была брендовая заливка; она уступила место «Услугам» ради чередования
+  поверхностей — DESIGN.md § 2. Тарифы от этого только выиграли: их
+  читают медленно, а бумага в системе и означает «здесь читают».
 */}
-<section id="pricing" class="scroll-mt-24 bg-brand py-16 text-white sm:py-20 lg:py-24">
+<section id="pricing" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
   <div class="site-container">
   <h2 class="section-title">
     {pricing.title}
@@ -15,7 +16,7 @@ import { pricing, site } from '../content/landing';
 
   <div class="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-2 lg:gap-8">
     <div
-      class="rounded-3xl bg-white px-7 py-8 text-ink sm:px-9 sm:py-10"
+      class="rounded-3xl border border-line bg-white px-7 py-8 sm:px-9 sm:py-10"
     >
       <h3 class="headline text-balance">
         {pricing.commission.title}
@@ -29,7 +30,7 @@ import { pricing, site } from '../content/landing';
       </div>
     </div>
 
-    <div class="rounded-3xl bg-white px-6 py-7 text-ink sm:px-9 sm:py-9">
+    <div class="rounded-3xl border border-line bg-white px-6 py-7 sm:px-9 sm:py-9">
       <h3 class="headline">
         {pricing.table.title}
       </h3>
@@ -43,11 +44,17 @@ import { pricing, site } from '../content/landing';
 
       <ul class="mt-4 space-y-4 sm:mt-5">
         {
-          pricing.table.rows.map((row) => (
+          pricing.table.rows.map((row, i) => (
             <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-brand">
               <span class="sm:text-lg">{row.term}</span>
-              {/* линия-выноска тянется между сроком и ценой, как в оригинале */}
-              <span class="h-px min-w-6 flex-1 bg-line" aria-hidden="true" />
+              {/* линия-выноска тянется между сроком и ценой, как в оригинале,
+                  и прочерчивается при прокрутке — см. `data-rule` */}
+              <span
+                data-rule
+                data-anim-delay={i * 0.08}
+                class="h-px min-w-6 flex-1 bg-line"
+                aria-hidden="true"
+              />
               <span class="ml-auto max-w-[60%] text-right text-pretty sm:text-lg">
                 {row.price}
               </span>

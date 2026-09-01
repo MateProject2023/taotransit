@@ -14,65 +14,83 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
   3D-объекты выступают за края. Композицию держим, ступеньки задаём
   шириной/выключкой, а не координатами.
 
+  Секция перекрашена в брендовую по просьбе заказчика и вместе с первым
+  экраном образует единое цветное поле: «За все время мы успели…» — это
+  продолжение утверждения hero, а не новая тема. В оригинале они тоже шли
+  одним фоном без границы.
+
+  Пилюли вернулись к градиенту оригинала, с перевёрнутыми ролями: белая
+  со стороны текста, брендовая со стороны объекта. Хвост уходит ровно в
+  цвет секции, поэтому объект выступает не из карточки, а прямо из
+  заливки — как на исходной странице. Механика та же, что была: пилюля
+  гаснет там, где её перекрывает 3D-объект.
+
   Числа вынесены из строки и набраны крупно: «6 китайских стен» и
   «300 индийских океанов» — это и есть шутка секции, а утопленные
   в предложение цифры её не доносят.
-
-  Пилюли залиты брендовым сплошняком: прежний градиент вёл к --action,
-  которого в светлой системе нет, а полутонов пакет не допускает.
 */}
-<section class="site-container py-16 sm:py-24 lg:py-32">
-  <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-16">
-    <h2 class="section-title">
-      {achievements.title}
-    </h2>
+<section class="bg-brand py-16 text-white sm:py-24 lg:py-32">
+  <div class="site-container">
+    <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-16">
+      <h2 class="section-title">
+        {achievements.title}
+      </h2>
 
-    <ul class="flex flex-col gap-5 sm:gap-6">
-      {
-        achievements.items.map((item, i) => (
-          <li
-            data-anim
-            data-anim-delay={(i % 2) * 0.1}
-            style={`--anim-x:${item.side === 'left' ? '-330px' : '330px'}`}
-            class:list={[
-              'relative flex min-h-32 items-center rounded-[2.5rem] bg-brand px-6 py-6 text-white sm:min-h-36 sm:px-8',
-              // ступеньки: смещение в процентах живёт уже на планшете,
-              // а не только на десктопе, как было раньше
-              i % 2 === 0 && 'sm:w-[86%] lg:w-[84%]',
-              item.side === 'left' ? 'justify-end text-right' : 'justify-start text-left',
-            ]}
-          >
-            <Image
-              src={art[item.image]}
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
+      <ul class="flex flex-col gap-5 sm:gap-6">
+        {
+          achievements.items.map((item, i) => (
+            <li
+              data-anim
+              data-anim-delay={(i % 2) * 0.1}
+              /* --pill-dir: направление растяжки. Сплошной конец — там, где
+                 лежит объект, поэтому `to left` для объекта справа. */
+              style={`--anim-x:${item.side === 'left' ? '-330px' : '330px'};--pill-dir:${item.side === 'left' ? 'to right' : 'to left'}`}
               class:list={[
-                'pointer-events-none absolute w-32 max-w-[36%] object-contain sm:w-40 lg:w-48',
-                // объект крупнее пилюли и выходит за её границы — как в оригинале
-                item.side === 'left' ? 'left-2 sm:-left-4' : 'right-2 sm:-right-4',
-              ]}
-            />
-            <p
-              class:list={[
-                'relative max-w-[60%] text-balance',
-                item.side === 'left' ? 'pl-2' : 'pr-2',
+                'ach-pill relative flex min-h-32 items-center rounded-[2.5rem] px-6 py-6 text-ink sm:min-h-36 sm:px-8',
+                // ступеньки: смещение в процентах живёт уже на планшете,
+                // а не только на десктопе, как было раньше
+                i % 2 === 0 && 'sm:w-[86%] lg:w-[84%]',
+                item.side === 'left' ? 'justify-end text-right' : 'justify-start text-left',
               ]}
             >
-              <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
-                {item.pre}
-              </span>
-              {' '}
-              <span class="figure-lead block text-3xl sm:text-4xl lg:text-5xl">
-                {item.figure}
-              </span>
-              <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
-                {item.post}
-              </span>
-            </p>
-          </li>
-        ))
-      }
-    </ul>
+              <Image
+                src={art[item.image]}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                class:list={[
+                  'pointer-events-none absolute w-32 max-w-[36%] object-contain sm:w-40 lg:w-48',
+                  // объект крупнее пилюли и выходит за её границы — как в оригинале
+                  item.side === 'left' ? 'left-2 sm:-left-4' : 'right-2 sm:-right-4',
+                ]}
+              />
+              {/* max-w-[52%] — не только композиция: растяжка кончается на
+                  48% ширины, ровно у этой границы. Менять одно без другого
+                  нельзя, иначе текст встанет на полутон. */}
+              <p
+                class:list={[
+                  'relative max-w-[52%] text-balance',
+                  item.side === 'left' ? 'pl-2' : 'pr-2',
+                ]}
+              >
+                <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
+                  {item.pre}
+                </span>
+                {' '}
+                {/* Число не переносится: «6 миллионов» в две строки ломает шутку.
+                    Строка при этом выходит за 52% в сторону растяжки — замер
+                    даёт 5.24:1 в худшей точке, проверяется gradient-audit. */}
+                <span class="figure-lead block text-3xl whitespace-nowrap text-brand sm:text-4xl lg:text-5xl">
+                  {item.figure}
+                </span>
+                <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
+                  {item.post}
+                </span>
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
   </div>
 </section>

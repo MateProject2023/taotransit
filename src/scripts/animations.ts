@@ -5,6 +5,12 @@
  * Начальное состояние задаёт CSS (см. `.anim [data-anim]` в global.css),
  * здесь только переход к нулю. `animate` берём из motion/mini — это
  * обёртка над WAAPI, она в разы легче основного бандла.
+ *
+ * `data-rule` — второй вид того же появления: линейка прочерчивается слева
+ * направо (scaleX 0 → 1). Заказчик попросил распространить на линейки
+ * страницы приём змейки «Все началось в 2013…», где линия дорисовывается
+ * по мере прокрутки. Механизм тот же наблюдатель, поэтому отдельного
+ * прохода нет — различается только целевое преобразование.
  */
 import { animate } from 'motion/mini';
 import { inView } from 'motion';
@@ -12,7 +18,7 @@ import { inView } from 'motion';
 export function initAnimations() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  const els = document.querySelectorAll<HTMLElement>('[data-anim]');
+  const els = document.querySelectorAll<HTMLElement>('[data-anim], [data-rule]');
   if (!els.length) return;
 
   // Порядок querySelectorAll — порядок документа, а он здесь совпадает
@@ -68,13 +74,20 @@ export function initAnimations() {
     (el) => {
       const target = el as HTMLElement;
       pending.delete(target);
+      // Линейка прочерчивается дольше блока: она длинная и тонкая, и на
+      // 600 мс глаз не успевает увидеть само движение — только результат.
+      const rule = target.hasAttribute('data-rule');
       animate(
         target,
-        { opacity: 1, transform: 'translate3d(0, 0, 0)' },
+        rule ? { transform: 'scaleX(1)' } : { opacity: 1, transform: 'translate3d(0, 0, 0)' },
         // 600 мс вместо унаследованной от Тильды секунды: на дистанции
         // 330 px секунда читается как вязкость, особенно с телефона.
         // Кривая — та же ease-out-quart, что у всех переходов в global.css.
-        { duration: 0.6, delay: Number(target.dataset.animDelay ?? 0), ease: [0.25, 1, 0.5, 1] },
+        {
+          duration: rule ? 0.8 : 0.6,
+          delay: Number(target.dataset.animDelay ?? 0),
+          ease: [0.25, 1, 0.5, 1],
+        },
       );
       return false; // как в оригинале — один раз
     },

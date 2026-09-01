@@ -1,75 +1,86 @@
 ---
 import { whyUs, ctas } from '../content/landing';
 
-type Card = { title: string; body: readonly string[] };
-
 /*
   Оригинал: шесть одинаковых карточек в две колонки, у каждой двухпиксельная
   фиолетовая рамка. Рядом «Ценности» — ещё четыре такие же. Две секции подряд
   читались как один повторяющийся приём.
 
-  Здесь сильнейшее утверждение выходит из сетки и становится вступительным
-  заявлением (какое именно — задаёт поле `lead` в landing.ts), а остальные
-  живут белыми карточками на брендовой заливке. Двухпиксельные рамки сняты:
-  именно они делали секцию похожей на форму.
+  Наша прежняя версия сняла рамки, но сетку оставила: четыре равные карточки
+  2×2 — заказчик и назвал это «так себе». Здесь сетка на три колонки, а
+  плитки берут одну или две: длинный текст — широкая плитка, короткий —
+  узкая. Узкие приходятся на противоположные углы, ряды получают разный
+  ритм, и высоты в ряду сходятся сами, без подгонки.
+
+  Секция переехала на бумагу. Причина не в этой секции, а в соседних:
+  первый экран и «За все время мы успели…» теперь оба брендовые, и третья
+  заливка подряд превратила бы верх страницы в сплошное синее поле высотой
+  в два с половиной экрана. Цвет остался там, где утверждение: гарантия
+  стоит брендовой плитой во всю ширину. Дальше идёт доказательство —
+  и оно на бумаге.
 */
 const { lead } = whyUs;
-const columns: readonly (readonly Card[])[] = [whyUs.left, whyUs.right];
 ---
 
-<section id="adventages" class="scroll-mt-24 bg-brand py-16 text-white sm:py-20 lg:py-28">
+<section id="adventages" class="scroll-mt-24 py-16 sm:py-20 lg:py-28">
   <div class="site-container">
-  <h2 class="section-title">
-    {whyUs.title}
-  </h2>
+    <h2 class="section-title">
+      {whyUs.title}
+    </h2>
 
-  {/* Вступительное заявление: не карточка, а утверждение во всю ширину */}
-  <div
-    data-anim
-    style="--anim-y:40px"
-    class="mt-10 grid gap-6 border-t border-line-on-brand pt-10 lg:mt-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-12"
-  >
-    <p class="text-2xl leading-[1.15] font-black text-balance sm:text-3xl lg:text-[2.75rem]">
-      {lead.title}
-    </p>
-    <div class="flex flex-col justify-center gap-4">
-      {lead.body.map((p) => (
-        <p class="leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
-      ))}
+    {/* Главное утверждение секции — единственное, что здесь залито цветом */}
+    <div
+      data-anim
+      style="--anim-y:40px"
+      {/* поля те же, что у плиток ниже: левый край текста должен встать
+          на одну вертикаль со всей секцией */}
+      class="mt-8 grid gap-6 rounded-3xl bg-brand px-6 py-8 text-white sm:px-8 sm:py-10 lg:mt-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14"
+    >
+      <p class="text-2xl leading-[1.15] font-black text-balance sm:text-3xl lg:text-[2.75rem]">
+        {lead.title}
+      </p>
+      <div class="flex flex-col justify-center gap-4">
+        {lead.body.map((p) => (
+          <p class="leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
+        ))}
+      </div>
     </div>
-  </div>
 
-  <div class="mt-10 grid items-start gap-5 sm:gap-6 lg:mt-14 lg:grid-cols-2">
-    {
-      columns.map((column, ci) => (
-        <div class="flex flex-col gap-5 sm:gap-6">
-          {column.map((card, i) => (
-            <article
-              data-anim
-              data-anim-delay={i * 0.1}
-              style={`--anim-x:${ci === 0 ? '-100px' : '100px'}`}
-              class="rounded-3xl bg-white px-6 py-6 text-ink sm:px-8 sm:py-7"
-            >
-              <h3 class="text-xl leading-[1.2] text-balance sm:text-2xl">
-                {card.title}
-              </h3>
-              {card.body.map((p) => (
-                <p class="mt-4 leading-relaxed text-ink-muted text-pretty sm:text-lg">{p}</p>
-              ))}
-            </article>
-          ))}
+    <div class="mt-5 grid gap-5 sm:gap-6 lg:grid-cols-3">
+      {
+        whyUs.cards.map((card, i) => (
+          <article
+            data-anim
+            data-anim-delay={i * 0.08}
+            /* сдвиг из того угла, в котором плитка стоит: узкие приходят
+               с краёв, широкие — с противоположной стороны */
+            style={`--anim-x:${i % 2 === 0 ? '-100px' : '100px'}`}
+            class:list={[
+              /* волосяная рамка обязательна: в «вертушке» форма плитки и есть
+                 композиция, а белое на бумаге это 1.03:1 — см. «Правило белой
+                 карточки» в DESIGN.md § 2 */
+              'rounded-3xl border border-line bg-white px-6 py-6 sm:px-8 sm:py-7',
+              card.wide && 'lg:col-span-2',
+            ]}
+          >
+            <h3 class="text-xl leading-[1.2] text-balance sm:text-2xl">
+              {card.title}
+            </h3>
+            {card.body.map((p) => (
+              <p class="mt-4 max-w-(--container-prose) leading-relaxed text-ink-muted text-pretty sm:text-lg">
+                {p}
+              </p>
+            ))}
+          </article>
+        ))
+      }
+    </div>
 
-          {/* кнопка живёт в правой колонке — как в оригинале.
-              Пары с ботом здесь нет: она ведёт в форму, а бот стоит прямо
-              над формой — дублировать его на полпути незачем. */}
-          {ci === 1 && (
-            <a href={ctas.formHref} class="cta cta-light text-lg">
-              {whyUs.cta}
-            </a>
-          )}
-        </div>
-      ))
-    }
-  </div>
+    {/* Кнопка стояла в конце правой колонки; колонок больше нет, поэтому
+        она ушла под сетку. Пары с ботом здесь нет: она ведёт в форму,
+        а бот стоит прямо над формой — дублировать его на полпути незачем. */}
+    <a href={ctas.formHref} class="cta cta-brand mt-8 text-lg sm:inline-flex sm:w-auto">
+      {whyUs.cta}
+    </a>
   </div>
 </section>

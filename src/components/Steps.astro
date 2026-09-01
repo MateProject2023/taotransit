@@ -3,60 +3,80 @@ import { steps } from '../content/landing';
 ---
 
 {/*
-  Оригинал — пять карточек в ряд разной высоты, «лесенкой», с огромной
-  римской цифрой, утопленной в низ карточки. Мы свели это к пяти плоским
-  строкам: читалось чище, но заказчик прав — оригинал был интереснее,
-  и карточки вернулись.
+  Возврат к композиции оригинала по прямой просьбе заказчика, но с
+  перевёрнутыми цветами: там тёмная секция и фиолетовые карточки, здесь
+  брендовая секция и белые.
 
-  От прежней раскладки сохранён порядок чтения: срок → описание. Ровно
-  тот же порядок, ради которого затевалась «цифра как герой».
+  Что перенесено буквально:
+  — залита не каждая карточка, а через одну (I, III, V). Вторая и четвёртая
+    стоят прямо на заливке секции: именно это чередование и делает ряд
+    интересным, ровные пять коробок его убивают;
+  — карточки одной высоты и с общим верхом. Прежняя «лесенка» (`lg:mt-14`
+    у чётных) была нашей выдумкой — на снимке заказчика её нет;
+  — римская цифра стоит по центру карточки и не касается дна;
+  — заливка не ровная, а растворяется вверх (см. `step-fill` в global.css:
+    длина растяжки равна нижнему полю, чтобы текст никогда не стоял на
+    полутоне — на светлой системе это не косметика, а условие читаемости).
 
-  Ступеньку задаёт отступ сверху у чётных карточек, а не ручные
-  координаты, как в Zero Block. На планшете ряд из пяти колонок
-  разваливается, поэтому ступенька живёт только с 1024px, ниже —
-  две колонки, а на телефоне одна.
+  Цифра — цвет соседней поверхности в половину силы: на белой карточке
+  брендовая, на заливке белая. В оригинале она была цветом фона и читалась
+  как вырубка; при прямой инверсии это дало бы 10.7:1 и пять кричащих цифр
+  в ряд, поэтому взята половина непрозрачности — исходные 2.8:1.
 */}
-<section id="steps" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
+<section id="steps" class="scroll-mt-24 bg-brand py-16 text-white sm:py-20 lg:py-24">
   <div class="site-container">
     <h2 class="section-title">
       {steps.title}
     </h2>
 
-    <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-14 lg:grid-cols-5 lg:items-start lg:gap-5">
+    <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-14 lg:grid-cols-5 lg:gap-5">
       {
-        steps.items.map((step, i) => (
-          <li
-            data-anim
-            data-anim-delay={i * 0.06}
-            style="--anim-y:48px"
-            class:list={[
-              /* pb-20 держит место под цифрой: она лежит в потоке нижним
-                 слоем, и без запаса описание налезало бы на неё */
-              /* Минимальная высота — только с планшета: на телефоне карточки идут
-                 одной колонкой, выравнивать их не с чем, и у коротких («1 день»)
-                 под текстом оставалось до 120px пустоты. pb-20 остаётся везде:
-                 это место под цифру. */
-              'relative flex flex-col overflow-hidden rounded-3xl bg-brand px-5 pt-6 pb-20 text-white sm:min-h-56 sm:px-6 sm:pt-7',
-              i % 2 === 0 ? 'lg:min-h-[23rem]' : 'lg:mt-14 lg:min-h-[19rem]',
-            ]}
-          >
-            <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.25rem]">
-              {step.duration}
-            </p>
-            <p class="mt-4 leading-snug text-on-brand text-pretty sm:text-lg lg:text-base">
-              {step.text}
-            </p>
-
-            {/* Цифра — тиснение, а не текст: читается фактурой карточки.
-                См. оговорку к The Deep Purple Rule в DESIGN.md § 2. */}
-            <span
-              class="figure-lead pointer-events-none absolute -bottom-3 right-4 text-[5rem] text-brand-deep select-none sm:text-[6.5rem]"
-              aria-hidden="true"
+        steps.items.map((step, i) => {
+          const filled = i % 2 === 0;
+          return (
+            <li
+              data-anim
+              data-anim-delay={i * 0.06}
+              style="--anim-y:48px"
+              class:list={[
+                /* pb держит место под цифрой и одновременно задаёт длину
+                   растяжки: `--fill-fade` в `step-fill` равен этому полю. */
+                'relative flex flex-col overflow-hidden rounded-3xl px-5 pt-6 pb-40 sm:px-6 sm:pt-7 lg:min-h-[24rem] lg:pb-60',
+                /* Пятая карточка в ряду из двух остаётся одна: без этого она
+                   прижата к левому краю, а справа зияет пустая ячейка.
+                   Ширина считается по колонке (половина минус половина
+                   зазора gap-4), чтобы карточка не растянулась на две. */
+                i === steps.items.length - 1 &&
+                  'sm:col-span-2 sm:mx-auto sm:w-[calc(50%-0.5rem)] lg:col-span-1 lg:mx-0 lg:w-auto',
+                filled && 'step-fill',
+              ]}
             >
-              {step.numeral}
-            </span>
-          </li>
-        ))
+              <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.25rem]">
+                {step.duration}
+              </p>
+              {/* Белый, а не приглушённый `text-on-brand`. Это цена поднятой
+                  растяжки, а не вкус: #C0C3D1 даёт 6.10:1 на чистой заливке
+                  и проваливается ниже 4.5:1 уже при 11% белого под ним —
+                  замер scripts/gradient-audit.mjs. Белому хватает до 30%.
+                  Иерархию внутри карточки держат кегль и вес, как и велит
+                  DESIGN.md § 3; в оригинале эта строка тоже была почти белой
+                  (#ebebf7). */}
+              <p class="mt-4 leading-snug text-pretty sm:text-lg lg:text-base">
+                {step.text}
+              </p>
+
+              <span
+                class:list={[
+                  'figure-lead pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 text-[4.5rem] select-none lg:bottom-8 lg:text-[6.5rem]',
+                  filled ? 'text-brand' : 'text-white/60',
+                ]}
+                aria-hidden="true"
+              >
+                {step.numeral}
+              </span>
+            </li>
+          );
+        })
       }
     </ol>
   </div>

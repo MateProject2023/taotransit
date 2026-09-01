@@ -23,7 +23,9 @@ const REPEAT = 8;
     <h2 class="text-4xl leading-none font-black sm:text-5xl">{footer.title}</h2>
   </div>
 
-  <ul class="mt-8 border-t border-line sm:mt-10">
+  {/* Разделителя над лентой больше нет: полосы стали брендовыми, и верхний
+      край первой из них сам отделяет её от заголовка. */}
+  <ul class="mt-8 sm:mt-10">
     {
       footer.links.map((link) => {
         const isEmail = link.href === 'email';
@@ -86,8 +88,8 @@ const REPEAT = 8;
         {/* Логотип бюро существует только в белом варианте (Bisma_logo_white2x)
             и на бумаге исчезает полностью. Инвертировать нельзя — у него
             радужная рамка, инверсия даст дополнительные цвета. Поэтому он
-            стоит на тёмной плашке: тот же --panel, что у контактных полос. */}
-        <span class="rounded-lg bg-panel px-3 py-2">
+            стоит на плашке — брендовой, как и шторки полос выше. */}
+        <span class="rounded-lg bg-brand px-3 py-2">
           <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
         </span>
       </a>

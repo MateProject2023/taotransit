@@ -15,61 +15,83 @@ const art = { buyout, consolidation, inspection, delivery };
   Аккордеон на <details>/<summary> — раскрытие, клавиатура и семантика
   достаются бесплатно, JS не нужен вовсе.
 
-  Секция на бумаге, а её шапка — брендовая карточка: роль перевернулась
-  вместе с системой. Раньше бумажная шапка светилась на индиговой заливке,
-  теперь индиговая карточка стоит на бумаге.
+  Секция переехала на заливку, а шапка стала белой — обратно тому, как
+  было. Причина в соседях: «Почему мы?» ушло на бумагу, «Этапы работы»
+  перекрашены в брендовый по просьбе заказчика, и без этой перестановки
+  посреди страницы вставали три бумажные секции подряд, а потом две
+  цветные. Полная раскладка — DESIGN.md § 2.
 */}
-<section id="services" class="scroll-mt-24 py-14 sm:py-20 lg:py-24">
+<section id="services" class="scroll-mt-24 bg-brand py-14 text-white sm:py-20 lg:py-24">
   <div class="site-container">
     <div
       data-anim
       style="--anim-x:87px"
-      class="flex flex-col gap-2 rounded-3xl bg-brand px-6 py-6 text-white sm:px-10 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
+      class="flex flex-col gap-2 rounded-3xl bg-white px-6 py-6 text-ink sm:px-10 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
     >
       <h2 class="text-4xl leading-none font-black sm:text-5xl lg:text-6xl">
         {services.title}
       </h2>
-      <p class="max-w-md text-base leading-snug font-bold text-on-brand text-pretty sm:text-lg lg:text-xl">
+      <p class="max-w-md text-base leading-snug font-bold text-ink-muted text-pretty sm:text-lg lg:text-xl">
         {services.kicker}
       </p>
     </div>
 
+    {/*
+      Разделители вынесены из `border-t` в отдельные элементы: они
+      прочерчиваются при прокрутке (`data-rule`, см. scripts/animations.ts).
+      Внутрь <details> их положить нельзя — браузер прячет всё, кроме
+      <summary>, пока пункт закрыт, — поэтому у каждого пункта своя обёртка.
+    */}
     <div class="mt-8 sm:mt-10">
       {
-        services.items.map((item) => (
-          <details class="group border-t border-line last:border-b">
-            <summary
-              class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-xl leading-tight transition-colors marker:content-none hover:text-brand sm:py-6 sm:text-2xl lg:text-3xl [&::-webkit-details-marker]:hidden"
-            >
-              {item.title}
-              <span
-                class="relative size-6 shrink-0 text-brand transition-transform duration-300 ease-out-quart group-open:rotate-45"
-                aria-hidden="true"
+        services.items.map((item, i) => (
+          <div class="relative">
+            <span
+              data-rule
+              data-anim-delay={i * 0.06}
+              class="absolute inset-x-0 top-0 h-px bg-line-on-brand"
+              aria-hidden="true"
+            />
+            <details class="group">
+              <summary
+                class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-xl leading-tight transition-colors marker:content-none hover:text-on-brand sm:py-6 sm:text-2xl lg:text-3xl [&::-webkit-details-marker]:hidden"
               >
-                <span class="absolute top-1/2 left-0 h-0.5 w-full -translate-y-1/2 rounded bg-current" />
-                <span class="absolute top-0 left-1/2 h-full w-0.5 -translate-x-1/2 rounded bg-current" />
-              </span>
-            </summary>
-            <div class="pb-6 sm:pb-7">
-              {'image' in item && (
-                /* Полоса 1280×270 — как в оригинале: над текстом, во всю
-                   ширину колонки. Ленивая: пункт закрыт при загрузке. */
-                <Image
-                  src={art[item.image as keyof typeof art]}
-                  alt=""
+                {item.title}
+                <span
+                  class="relative size-6 shrink-0 transition-transform duration-300 ease-out-quart group-open:rotate-45"
                   aria-hidden="true"
-                  loading="lazy"
-                  sizes="(min-width: 1200px) 1200px, 100vw"
-                  class="mb-5 w-full rounded-2xl"
-                />
-              )}
-              {item.body.map((p) => (
-                <p class="max-w-(--container-prose) leading-relaxed text-ink-muted text-pretty sm:text-lg">{p}</p>
-              ))}
-            </div>
-          </details>
+                >
+                  <span class="absolute top-1/2 left-0 h-0.5 w-full -translate-y-1/2 rounded bg-current" />
+                  <span class="absolute top-0 left-1/2 h-full w-0.5 -translate-x-1/2 rounded bg-current" />
+                </span>
+              </summary>
+              <div class="pb-6 sm:pb-7">
+                {'image' in item && (
+                  /* Полоса 1280×270 — как в оригинале: над текстом, во всю
+                     ширину колонки. Ленивая: пункт закрыт при загрузке. */
+                  <Image
+                    src={art[item.image as keyof typeof art]}
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                    sizes="(min-width: 1200px) 1200px, 100vw"
+                    class="mb-5 w-full rounded-2xl"
+                  />
+                )}
+                {item.body.map((p) => (
+                  <p class="max-w-(--container-prose) leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
+                ))}
+              </div>
+            </details>
+          </div>
         ))
       }
+      <span
+        data-rule
+        data-anim-delay={services.items.length * 0.06}
+        class="block h-px bg-line-on-brand"
+        aria-hidden="true"
+      />
     </div>
   </div>
 </section>
