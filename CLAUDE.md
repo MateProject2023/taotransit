@@ -8,7 +8,11 @@ A **rebuild of the taotransit.com landing page** — currently a Tilda one-pager
 
 **Current state: stage 1 (layout) is built, the design refresh on top of it is done, and the lead form's front end is in.** Astro 7 + Tailwind 4, all 13 visible sections rebuilt, zero external requests, no console errors. `PLAN.md` holds the agreed staging.
 
-The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`, keeping the site dark. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). **The migration is done** — `DESIGN.md` § 7 records what changed and the one thing left open (the logo SVGs still carry `#5b35e5`).
+The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`. **The site is now light**, on the client's decision — the package is applied as a light system, not ported to a dark ground. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). `DESIGN.md` § 7 records all six passes; the sixth is the light migration and it names what is still open.
+
+**The Two Surfaces Rule governs every section.** There are exactly two surfaces — paper `#F9FAFD` and brand `#2C3192` — and each section belongs entirely to one of them. No half-tones, no grey section grounds, no gradients between surfaces. `--panel: #2B2E39` is an inset (contact-line shutters, video backing), not a third surface. The section-by-section map is a table in `DESIGN.md` § 2; read it before adding or reordering a section.
+
+**There are no shadows at all.** Elevation comes from a white card on paper. The `glow-*` utilities are gone; don't reintroduce them.
 
 ### Project layout
 
@@ -80,7 +84,7 @@ Interleaved `t215` records are decorative/spacer blocks (no text).
 
 ### Design tokens
 
-**The live palette is `DESIGN.md` § 2, not this table.** What follows is the *original Tilda* palette, kept for reading the reference screenshots and `reference/tilda-page.css`. It is being replaced — see "Design context" below.
+**The live palette is `DESIGN.md` § 2, not this table.** What follows is the *original Tilda* palette — a dark one — kept only for reading the reference screenshots and `reference/tilda-page.css`. **The site itself is light and shares none of these values.**
 
 | Token | Value | Occurrences | Use on the original |
 |---|---|---|---|
@@ -103,9 +107,13 @@ Also present: `#08070d` (deeper-than-background), `#f3f1ff`.
 
 Vendored at the repo root, 216 KB with the font. `tokens.css` (46 CSS variables, no dependencies), `tokens.json` (same, machine-readable, with usage notes), `craft-font.css` + `fonts/`, and a `README.md` whose five rules are the reasoning behind the values.
 
-**It is a light-theme system** — `#F9FAFD` paper, `#111111` ink, `#2C3192` indigo, sections alternating between paper and brand for 30–60% of the vertical. This site is dark, so the package is **ported, not imported**: `DESIGN.md` § 2 records which tokens are taken verbatim (`brand`, `brand-deep`, `panel`, `paper`, `ink`), which are re-derived for a dark ground, and why. Do not `@import tokens.css` into `global.css` and expect it to work.
+**It is a light-theme system** — `#F9FAFD` paper, `#111111` ink, `#2C3192` indigo, sections alternating between paper and brand for 30–60% of the vertical. **The site now matches it**, so the values are used verbatim rather than re-derived. Exactly one colour is ours: `--color-line-on-brand: #8083BE`, a hairline for dividers inside brand fills (white 40% into brand, 3.01:1 — the package has no token for that case).
 
-Two things from the package that transfer unchanged and are easy to miss: hover moves **down** in lightness, never up; and `--panel: #2B2E39`, described there as a rare dark inset on paper, becomes the default raised card surface here — the same token with an inverted role.
+Still **don't `@import tokens.css`**: Tailwind v4 is CSS-first and the tokens live in the `@theme` block of `src/styles/global.css`, where they also become utility classes. The package stays the reference, not a dependency.
+
+Two things from the package that are easy to miss: hover moves **down** in lightness, never up (brand button → `#1D1A77`; white button → paper fill plus deep-violet text); and `--panel: #2B2E39` really is the rare dark inset it is described as — here it is only the contact-line shutters and the video backing.
+
+⚠️ Two package figures don't hold as written and were re-measured: `#6C6E78` is 5.1:1 on **white** but 4.86:1 on paper, and a white card on paper is 1.03:1 — enough for large planes, not enough for a card that has to read as an object (timeline cards sit on the snake line, case cards sit in a scroll strip). Those get a `--line` hairline. See "Правило белой карточки" in `DESIGN.md` § 2.
 
 ### Two Rutube videos (found only at runtime — not in the HTML)
 
@@ -158,7 +166,7 @@ Footer links: concierge bot, `t.me/TradeWithMate_Rail` (manager), `t.me/+UfG8_bV
 
 **Front end: built (stage 1).** `src/components/LeadForm.astro` + `src/scripts/lead.ts` + `leadForm` in `landing.ts`. It is its own section `#lead`, placed **right after «Как мы работаем»** — the bot section explains how the service works and ends with a button into the bot, and the form is the second way in. Every CTA on the page anchors to it, so no anchor ever scrolls backwards. The section carries its own concierge-bot button beside the form; that is the page's only real fork. Every other CTA is a single button — `DESIGN.md` § 5 «Кнопка бота» has the reasoning, including why the paired buttons that existed briefly were removed.
 
-The «Что нужно» field is a custom listbox (`src/components/Select.astro` + `src/scripts/select.ts`), not a native `<select>` — on a dark form the native one renders a light system panel. It reproduces native keyboard behaviour; if you touch it, keep that.
+The «Что нужно» field is a custom listbox (`src/components/Select.astro` + `src/scripts/select.ts`), not a native `<select>`. The original reason was that a native select rendered a light system panel on a dark form; that reason is gone with the dark theme, but the arrow, padding and typography still come from the browser and differ in each. It reproduces native keyboard behaviour; if you touch it, keep that.
 
 The client already assembles the complete request body: `requestId`, all 11 tracking marks, `_ym_uid` from the Metrica cookie, the relay/origin split and the fallback retry. Stage 2 adds addresses, not client code.
 
@@ -261,8 +269,11 @@ Note for stage 2: a Vercel deploy also changes the form's back end. Vercel suppo
 
 - Copy lives in **one content module**, not inline in markup — the page is 100% Russian marketing copy that the client will revise.
 - **Anchors point where the original pointed**, and it is not obvious: Tilda hangs them on empty spacer records *before* the section. `#adventages` → «Почему мы?» (not the achievements strip, which has no anchor), `#services` → the services accordion, `#contacts` → footer. Verified against the original markup, don't "fix" them by name.
-- **Four scope passes are already closed.** The rebuild was "responsive behaviour and contrast only"; the refresh after it moved palette, typography, density and states onto the MATE tokens and re-authored four sections («Почему мы?», «Ценности», «Этапы работы», «Достижения»); the third added the lead form and, with it, the site's second contact channel; the fourth promoted the form to the page's primary destination (its own `#lead` section) and added the legal layer; the fifth rebuilt the tail — «Как начать работу ?» became «Как мы работаем» and was re-laid as a single vertical line, the form moved up behind it, and the final-CTA section was removed. Imagery and video were left untouched throughout, and still should be. Copy was touched exactly once, in the fifth pass, and only where the client dictated it (that section's heading and lead); everything else is still the original wording. Don't start a sixth pass without asking.
-- Reference screenshots at every original breakpoint are the acceptance artifact for *fidelity* questions — capture before, compare after. They stop being the acceptance criterion for the four sections being re-authored; for those, `DESIGN.md` is.
+- **Six scope passes are already closed.** The rebuild was "responsive behaviour and contrast only"; the refresh after it moved palette, typography, density and states onto the MATE tokens and re-authored four sections («Почему мы?», «Ценности», «Этапы работы», «Достижения»); the third added the lead form and, with it, the site's second contact channel; the fourth promoted the form to the page's primary destination (its own `#lead` section) and added the legal layer; the fifth rebuilt the tail — «Как начать работу ?» became «Как мы работаем» and was re-laid as a single vertical line, the form moved up behind it, and the final-CTA section was removed; **the sixth moved the whole site from the dark palette to the light MATE system** and, with it, removed «перевод средств» from every section and relabelled the form CTAs. Imagery and video were left untouched throughout, and still should be.
+
+Copy has been touched three times, always on the client's explicit instruction: the fifth pass rewrote that one section's heading and lead; the sixth changed the «Почему мы?» guarantee line, the form's heading and consent line, and deleted every mention of money transfers. Everything else is still the original Tilda wording. Don't start a seventh pass without asking — and note that **four items of client feedback are deliberately still open**, listed at the end of `DESIGN.md` § 7 (first screen, «Этапы работы», «Как мы работаем», cases navigation).
+- Reference screenshots at every original breakpoint are the acceptance artifact for *fidelity* questions — capture before, compare after. Since the light migration they are **no longer the acceptance criterion for colour at all**; for anything visual, `DESIGN.md` is. They remain useful for layout, composition and copy.
+- `scripts/compare-feedback.mjs` shoots the live original, our build and mate's contact block at the same places and states, into `reference/compare/` (git-ignored — regenerate it, don't commit it). `scripts/contrast.mjs` measures a WCAG pair from the command line. Both exist because "на глаз" has already been wrong here more than once.
 
 ## Design context
 
@@ -274,8 +285,8 @@ Two root files carry the design brief. **Read them before any visual work**; eve
 Three things from them worth carrying in your head:
 
 1. **The visitor already has an agent.** They are not shopping for logistics, they are deciding whether to switch. Every section answers "what happens when it goes wrong".
-2. **The North Star is «Ночная смена».** Dark is justified by the timezone gap — the seller reads at 1am Moscow time, the Yiwu warehouse has already started the next day — not by taste. The rule that follows: *light goes to what works* (deadlines, numbers, the bot button), never to decoration.
-3. **The humour is load-bearing.** «Обернуть скотчем 6 китайских стен», the 3D objects, the founders at the containers. They are what keeps the page from drifting into a Linear clone, which is the standard trap for dark-plus-violet. Don't tidy them away.
+2. **The North Star is «Дневная смена».** It replaced «Ночная смена» in the sixth pass: dark used to be justified by the timezone gap, and the client chose brand unity with MATE instead. The rule that follows: *colour goes to the claim, paper to the proof.* Brand fill is the scarce resource — first screen, the guarantee, the CTA band, the form. Paper goes to what is read slowly: cases, history, rates.
+3. **The humour is load-bearing.** «Обернуть скотчем 6 китайских стен», the 3D objects, the founders at the containers. They are what keeps the page from drifting into a generic light SaaS template — the trap of the light theme, which replaced the old trap of dark-plus-violet (a Linear clone). Don't tidy them away.
 
 ## Соответствие оригиналу: что снято замерами, а не на глаз
 
@@ -283,7 +294,7 @@ Three things from them worth carrying in your head:
 
 **Типографика.** Заголовки секций — **96px / 900 / line-height 1** (утилита `section-title`), «Все началось в 2013…» — 48/900. Подзаголовки карточек в «Почему мы?» и «Ценностях» — **400, не жирные** (частая ошибка на глаз). Текст пилюль достижений — 24/900, «1 день» в этапах — 36/900, заголовки кейсов и тарифов — 36/900. Кнопки — 24/700. Подписи hero — 20/400 и 22/400. Меню — Black.
 
-**Свечения** (`box-shadow`, spread всегда 0, утилиты `glow-*`):
+**Свечения оригинала** (`box-shadow`, spread всегда 0). Их девять, и **ни одно не воспроизводится** — на светлой системе теней нет вовсе. Таблица оставлена для чтения эталонных снимков:
 
 | Где | Значение |
 |---|---|
