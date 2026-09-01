@@ -1,0 +1,57 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  /** id элемента-подписи: у кнопки не работает <label for>, только aria. */
+  labelId: string;
+  placeholder: string;
+  options: readonly string[];
+}
+
+const { id, name, labelId, placeholder, options } = Astro.props;
+
+/* Пустое значение — такой же пункт списка, а не отдельный «сброс»:
+   так стрелками можно вернуться к «не выбрано», как в нативном. */
+const items = [{ value: '', label: placeholder }, ...options.map((o) => ({ value: o, label: o }))];
+---
+
+<div class="relative" data-select>
+  <button
+    type="button"
+    id={`${id}-button`}
+    data-select-trigger
+    class="field field-trigger"
+    role="combobox"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    aria-controls={`${id}-list`}
+    aria-labelledby={`${labelId} ${id}-button`}
+  >
+    <span data-select-value class="truncate text-fg-faint">{placeholder}</span>
+    <svg viewBox="0 0 12 8" fill="none" class="size-3 shrink-0 text-fg-faint transition-transform duration-200" aria-hidden="true">
+      <path d="M1 1.5 6 6.5l5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+  </button>
+
+  <ul id={`${id}-list`} data-select-list role="listbox" aria-labelledby={labelId} class="listbox" hidden>
+    {
+      items.map((item, i) => (
+        <li
+          id={`${id}-o${i}`}
+          role="option"
+          class="listbox-option"
+          data-value={item.value}
+          aria-selected={i === 0 ? 'true' : 'false'}
+        >
+          <span>{item.label}</span>
+          <svg viewBox="0 0 16 12" fill="none" class="size-3.5 shrink-0" aria-hidden="true">
+            <path d="M1 6.5 5.5 11 15 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </li>
+      ))
+    }
+  </ul>
+
+  {/* Значение уезжает обычным полем формы — остальной код о списке не знает */}
+  <input type="hidden" name={name} data-select-input value="" />
+</div>

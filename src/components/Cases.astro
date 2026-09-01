@@ -5,6 +5,11 @@ import { cases } from '../content/landing';
 {/*
   Оригинал — карусель на скриптах Тильды. Здесь это лента с scroll-snap:
   тот же жест, нулевой JS, работает с клавиатуры и не ломается без скриптов.
+
+  Карточки в ленте одной высоты, а тексты кейсов различаются вдвое, и у
+  коротких снизу пустовало до 46% карточки. Пустоту не убирали, а отдали
+  под работу: подвал с ключевым числом прижат к низу, поэтому у всех
+  карточек низ занят, а свободное место превратилось в паузу перед выводом.
 */}
 <section id="cases" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
   <div class="site-container">
@@ -20,20 +25,30 @@ import { cases } from '../content/landing';
   >
     {
       cases.items.map((item) => (
-        <li
-          class="flex w-[min(85vw,34rem)] shrink-0 snap-start flex-col rounded-[2rem] border border-paper/25 bg-ink-deep/40 px-6 py-7 sm:px-8 sm:py-9"
-        >
-          <h3 class="text-2xl leading-[1.2] font-black text-balance text-accent-light sm:text-[2.25rem]">
+        <li class="flex w-[min(85vw,34rem)] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel px-6 py-7 sm:px-8 sm:py-9">
+          <h3 class="headline text-balance text-accent">
             {item.title}
           </h3>
+
           <div class="mt-5 space-y-4">
             {item.body.map((p) => (
-              <p class="leading-relaxed text-paper/85 text-pretty">{p}</p>
+              <p class="leading-relaxed text-fg-muted text-pretty">{p}</p>
             ))}
           </div>
-          <p class="mt-6 text-lg leading-snug font-black text-pretty text-accent-light sm:text-xl">
+
+          {/* вывод набран светлым, а не акцентом: акцент уже занят
+              заголовком и числом, третий акцент в карточке — шум */}
+          <p class="mt-6 text-lg leading-snug font-bold text-pretty">
             {item.result}
           </p>
+
+          {/* подвал прижат к низу — он и держит нижнюю линию всей ленты */}
+          <div class="mt-auto border-t border-line pt-6 sm:pt-7">
+            <p class="figure-lead text-3xl text-accent sm:text-[2.5rem]">{item.figure}</p>
+            <p class="mt-2 max-w-[24rem] text-sm leading-snug text-fg-muted text-pretty">
+              {item.figureNote}
+            </p>
+          </div>
         </li>
       ))
     }

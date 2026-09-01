@@ -1,0 +1,86 @@
+---
+import { legalDocs, legalRequisites, legalCompany } from '../content/legal';
+
+/*
+  Четыре документа в нативных <dialog>. Модальные окна запрещены DESIGN.md § 6,
+  и запрет снят заказчиком точечно — только под документы: они читаются раз,
+  не должны уводить со страницы и не участвуют в композиции.
+
+  <dialog> взят ради того, что он даёт даром: фокус заперт внутри, Escape
+  закрывает, остальная страница получает inert. Своя реализация всего этого —
+  сотня строк и три способа ошибиться.
+
+  ⚠️ Тексты — рабочий черновик, а не заключение юриста, и реквизиты заполнены
+  наполовину. См. шапку src/content/legal.ts и CLAUDE.md.
+*/
+---
+
+{
+  legalDocs.map((doc) => (
+    <dialog class="sheet" data-legal={doc.id} aria-labelledby={`legal-${doc.id}-title`}>
+      <div class="flex max-h-[inherit] flex-col">
+        <header class="flex items-start justify-between gap-4 border-b border-line px-5 py-5 sm:px-8 sm:py-6">
+          <h2 id={`legal-${doc.id}-title`} class="text-xl leading-[1.2] font-black text-balance sm:text-2xl">
+            {doc.title}
+          </h2>
+          <button
+            type="button"
+            data-legal-close
+            class="-me-1 -mt-1 flex size-10 shrink-0 items-center justify-center rounded-xl text-fg-muted transition-colors hover:text-fg"
+          >
+            <span class="sr-only">Закрыть</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-5" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="overflow-y-auto overscroll-contain px-5 py-6 sm:px-8 sm:py-7">
+          <p class="leading-relaxed text-fg-muted text-pretty">{doc.lead}</p>
+
+          {doc.sections.map((section) => (
+            <section class="mt-7">
+              <h3 class="text-lg leading-snug font-bold text-balance">{section.title}</h3>
+              {section.body.map((block) =>
+                Array.isArray(block) ? (
+                  <ul class="mt-3 flex flex-col gap-2">
+                    {block.map((item) => (
+                      <li class="relative ps-5 leading-relaxed text-fg-muted text-pretty">
+                        <span class="absolute start-0 top-[0.7em] size-1.5 rounded-full bg-accent-line" aria-hidden="true" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p class="mt-3 leading-relaxed text-fg-muted text-pretty">{block}</p>
+                ),
+              )}
+            </section>
+          ))}
+
+          {/* Реквизиты идут в каждом документе: их требуют публиковать,
+              а искать их в одном из четырёх окон читателю негде. */}
+          <section class="mt-9 border-t border-line pt-6">
+            <h3 class="text-lg leading-snug font-bold">Реквизиты</h3>
+            <dl class="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-[minmax(0,auto)_minmax(0,1fr)]">
+              {legalRequisites.map((row) => (
+                <>
+                  {/* fg-faint на панели даёт 4.35:1 — внутри карточек берётся
+                      fg-muted, а иерархию держит цвет значения (DESIGN.md § 2) */}
+                  <dt class="text-sm text-fg-muted sm:text-base">{row.label}</dt>
+                  <dd class="text-fg">{row.value || '—'}</dd>
+                </>
+              ))}
+            </dl>
+            <p class="mt-4 text-sm leading-relaxed text-fg-muted">
+              Прочерк означает, что реквизит ещё не внесён. Вопросы по документам —
+              <a href={`mailto:${legalCompany.email}`} class="text-accent underline underline-offset-4">
+                {legalCompany.email}
+              </a>.
+            </p>
+          </section>
+        </div>
+      </div>
+    </dialog>
+  ))
+}

@@ -17,7 +17,14 @@ const browser = await chromium.launch();
 for (const width of WIDTHS) {
   const dir = path.join(OUT, String(width));
   await mkdir(dir, { recursive: true });
-  const page = await browser.newPage({ viewport: { width, height: 900 }, deviceScaleFactor: 2 });
+  // reducedMotion вместо ручного проставления стилей: этот путь уже обслужен
+  // и в global.css, и в animations.ts, и в timeline.ts (там он доводит линию
+  // до конца), поэтому снимок совпадает с конечным состоянием страницы.
+  const page = await browser.newPage({
+    viewport: { width, height: 900 },
+    deviceScaleFactor: 2,
+    reducedMotion: 'reduce',
+  });
   await page.goto(url, { waitUntil: 'networkidle', timeout: 30_000 });
   await page.evaluate(async () => {
     await new Promise((r) => {
@@ -32,7 +39,7 @@ for (const width of WIDTHS) {
     });
   });
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(dir, 'full.png'), fullPage: true, animations: 'disabled' });
   // не только section[id]: часть секций без якоря, а подвал — <footer>
   const blocks = await page.$$('main > section, body > footer');

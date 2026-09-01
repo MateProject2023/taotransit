@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import logo from '../assets/img/logo-2line-a.svg';
 import poster from '../assets/img/hero-poster.jpg';
-import { hero, site } from '../content/landing';
+import { hero, ctas } from '../content/landing';
 ---
 
 {/*
@@ -36,9 +36,9 @@ import { hero, site } from '../content/landing';
 
   {/* затемнение: кадры у ролика разной светлоты, поэтому под текстом
       плотнее, чем по краям — иначе на светлом кадре подпись тонет */}
-  <div class="absolute inset-0 -z-10 bg-ink/75" aria-hidden="true"></div>
+  <div class="absolute inset-0 -z-10 bg-ground/75" aria-hidden="true"></div>
   <div
-    class="absolute inset-0 -z-10 bg-linear-to-b from-ink/40 via-ink/10 to-ink/60"
+    class="absolute inset-0 -z-10 bg-linear-to-b from-ground/40 via-ground/10 to-ground/60"
     aria-hidden="true"
   >
   </div>
@@ -61,11 +61,13 @@ import { hero, site } from '../content/landing';
         <p class="text-lg leading-[1.55] text-balance sm:text-xl lg:text-[1.375rem] lg:text-pretty">
           {hero.lead}
         </p>
+        {/* Одна кнопка, и она ведёт в форму. Пары с ботом здесь нет намеренно:
+            бот стоит над самой формой, куда эта кнопка и приводит, — второй
+            раз предлагать его на первом экране значит делить первый выбор
+            надвое там, где выбора ещё нет. */}
         <a
-          href={site.manager}
-          target="_blank"
-          rel="noopener"
-          class="cta glow-accent-lg mt-6 w-full bg-accent text-xl text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light lg:mt-8"
+          href={ctas.formHref}
+          class="cta cta-action glow-cta mt-6 w-full text-xl lg:mt-8"
         >
           {hero.cta}
         </a>

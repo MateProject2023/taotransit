@@ -1,0 +1,163 @@
+---
+import { leadForm, site, ctas } from '../content/landing';
+import Select from './Select.astro';
+
+/*
+  Второй канал связи и, по решению заказчика, основной путь: сюда ведут все
+  призывы страницы. Это отменяет прежнее правило «всё ведёт в бота»
+  (DESIGN.md § 6) и не отменяет ни одного другого:
+
+  — рядом с формой стоит равновесная кнопка в бота, и такая же пара повторена
+    у каждого призыва — бот нигде не теряется;
+  — модального окна нет: форма живёт в потоке, поп-ап запрещён § 6 и он же
+    половина «тильда-корпоратива», от которого страница уходит;
+  — успех уводит обратно в бота, сбой — к менеджеру: оба исхода возвращают
+    человека в работающий канал.
+
+  Приёмников пока нет: до этапа 2 форма в демо-режиме (FORM.md § 1).
+*/
+const errors = JSON.stringify(leadForm.errors);
+const { consent } = leadForm;
+---
+
+<section id="lead" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14">
+    <div>
+      <h2 class="section-title">{leadForm.title}</h2>
+      <p class="mt-6 max-w-(--container-prose) leading-relaxed text-fg-muted text-pretty sm:text-lg">
+        {leadForm.body}
+      </p>
+
+      {/* Вторая половина пары: форма справа, бот здесь, оба на виду */}
+      <a href={site.bot} target="_blank" rel="noopener" class="cta cta-secondary mt-8 text-lg">
+        {ctas.bot}
+      </a>
+    </div>
+
+    <div>
+      <form
+        data-lead-form
+        data-lead-errors={errors}
+        data-lead-submitting={leadForm.submitting}
+        novalidate
+        class="rounded-3xl border border-line bg-panel px-5 py-6 sm:px-8 sm:py-7"
+      >
+        {/* Honeypot: уведён за экран и скрыт от скринридеров — человек его
+            не видит и не встретит табуляцией, робот заполняет. */}
+        <div class="absolute -left-[9999px] w-px overflow-hidden" aria-hidden="true">
+          <label>
+            Компания
+            <input type="text" name="company" tabindex="-1" autocomplete="off" />
+          </label>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2 sm:gap-5">
+          <p class="flex flex-col gap-2">
+            <label class="text-sm text-fg-muted" for="lead-name">{leadForm.fields.name.label}</label>
+            <input
+              class="field"
+              id="lead-name"
+              name="name"
+              type="text"
+              autocomplete="name"
+              placeholder={leadForm.fields.name.placeholder}
+              aria-describedby="lead-name-error"
+            />
+            <span id="lead-name-error" data-lead-error="name" class="text-sm text-alert" hidden></span>
+          </p>
+
+          <p class="flex flex-col gap-2">
+            <label class="text-sm text-fg-muted" for="lead-phone">{leadForm.fields.phone.label}</label>
+            <input
+              class="field"
+              id="lead-phone"
+              name="phone"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              placeholder={leadForm.fields.phone.placeholder}
+              aria-describedby="lead-phone-error"
+            />
+            <span id="lead-phone-error" data-lead-error="phone" class="text-sm text-alert" hidden></span>
+          </p>
+
+          <p class="flex flex-col gap-2">
+            <label class="text-sm text-fg-muted" for="lead-email">{leadForm.fields.email.label}</label>
+            <input
+              class="field"
+              id="lead-email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder={leadForm.fields.email.placeholder}
+              aria-describedby="lead-email-error"
+            />
+            <span id="lead-email-error" data-lead-error="email" class="text-sm text-alert" hidden></span>
+          </p>
+
+          <div class="flex flex-col gap-2">
+            <span class="text-sm text-fg-muted" id="lead-need-label">{leadForm.fields.need.label}</span>
+            <Select
+              id="lead-need"
+              name="need"
+              labelId="lead-need-label"
+              placeholder={leadForm.fields.need.placeholder}
+              options={leadForm.needOptions}
+            />
+          </div>
+        </div>
+
+        {/* Сбой отправки уводит в живой канал, а не оставляет наедине с ошибкой */}
+        <p data-lead-failure role="alert" class="mt-5 text-sm leading-relaxed text-alert" hidden>
+          <strong class="font-bold">{leadForm.failure.title}.</strong>{' '}
+          {leadForm.failure.body}{' '}
+          <a
+            href={site.manager}
+            target="_blank"
+            rel="noopener"
+            class="underline underline-offset-4">{leadForm.failure.cta}</a
+          >
+        </p>
+
+        <button data-lead-submit type="submit" class="cta cta-action mt-6 w-full text-lg">
+          {leadForm.submit}
+        </button>
+
+        <p class="mt-4 text-sm leading-snug text-fg-muted">
+          {consent.before}<button
+            type="button"
+            data-legal-open="consent"
+            class="rounded-sm text-left text-accent underline underline-offset-4 transition-colors hover:text-fg"
+            >{consent.consentLink}</button
+          >{consent.middle}<button
+            type="button"
+            data-legal-open="privacy"
+            class="rounded-sm text-left text-accent underline underline-offset-4 transition-colors hover:text-fg"
+            >{consent.policyLink}</button
+          >{consent.after}
+        </p>
+      </form>
+
+      {/* Успех тоже возвращает в бота: форма — обход, а не замена канала */}
+      <div
+        data-lead-done
+        tabindex="-1"
+        class="rounded-3xl border border-line bg-panel px-5 py-6 sm:px-8 sm:py-7"
+        hidden
+      >
+        <p class="text-2xl leading-[1.2] font-black text-balance">{leadForm.success.title}</p>
+        <p class="mt-4 leading-relaxed text-fg-muted text-pretty sm:text-lg">
+          {leadForm.success.body}
+        </p>
+        <a
+          href={site.bot}
+          target="_blank"
+          rel="noopener"
+          class="cta cta-action mt-6 w-full text-lg"
+        >
+          {leadForm.success.cta}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

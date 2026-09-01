@@ -11,14 +11,14 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
   </h2>
 
   <div class="mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[1.7fr_1fr] lg:gap-8">
-    <div class="glow-paper rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10">
+    <div class="rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10">
       <p class="text-lg leading-snug text-pretty sm:text-xl">
-        <strong class="font-bold text-accent">{about.missionLead}</strong>{about.mission}
+        <strong class="font-bold text-brand">{about.missionLead}</strong>{about.mission}
       </p>
       <h3 class="mt-8 text-3xl leading-none font-black sm:text-4xl lg:text-5xl">
         {about.valuesTitle}
       </h3>
-      <ul class="mt-5 space-y-1 text-lg font-semibold text-accent sm:text-xl">
+      <ul class="mt-5 space-y-1 text-lg font-semibold text-brand sm:text-xl">
         {about.values.map((v) => <li>•{v}</li>)}
       </ul>
     </div>
@@ -28,9 +28,9 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
         src={founders}
         alt={about.photoCaption}
         loading="lazy"
-        class="w-full rounded-[1.5rem] object-cover"
+        class="w-full rounded-3xl object-cover"
       />
-      <figcaption class="mt-4 text-center text-paper/80 lg:text-right">
+      <figcaption class="mt-4 text-center text-fg-muted lg:text-right">
         {about.photoCaption}
       </figcaption>
     </figure>
@@ -75,21 +75,41 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
       }
     </svg>
 
-    {/* вертикальная ось — только для узких экранов */}
-    <div class="absolute inset-y-0 left-3 w-0.5 bg-accent/40 xl:hidden" aria-hidden="true"></div>
+    {/*
+      Узкие экраны: та же змейка, но по вертикали. Путь строится скриптом
+      по реальным позициям узлов (высота карточек зависит от длины текста
+      и от кегля у читателя), поэтому линия всегда проходит ровно через них.
+      Раньше здесь была прямая палка в 2px — она держала порядок, но ничего
+      не рассказывала.
+    */}
+    <svg
+      data-timeline-mobile
+      class="pointer-events-none absolute inset-0 h-full w-full xl:hidden"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        data-timeline-mobile-path
+        stroke="var(--color-accent)"
+        stroke-width="2"
+        stroke-linecap="round"
+        vector-effect="non-scaling-stroke"
+      />
+    </svg>
 
-    <ol class="flex flex-col gap-6 xl:block xl:h-(--tl-h) xl:gap-0">
+    <ol class="flex flex-col gap-8 xl:block xl:h-(--tl-h) xl:gap-0">
       {
         about.timeline.map((entry, i) => (
-          <li class="contents">
+          <li class="tl-item">
+            <span data-tl-node class="tl-node" aria-hidden="true" />
+            <span class="tl-year figure-lead">{entry.year}</span>
+
             <div
-              class="relative ml-10 xl:absolute xl:ml-0"
+              class="tl-card xl:absolute"
               style={`--x:${geo.cards[i].x}%;--y:${geo.cards[i].y}px;--w:${geo.cards[i].w}%`}
-              data-tl-card
             >
               <div
-                class="space-y-4 rounded-[1.25rem] bg-paper px-6 py-6 text-ink sm:px-7 xl:px-0 xl:py-0"
-                data-tl-body
+                class="space-y-4 rounded-3xl bg-paper px-6 py-6 text-ink sm:px-7 xl:px-0 xl:py-0"
               >
                 {entry.text.map((par) => (
                   <p class="leading-relaxed text-pretty xl:text-[1.125rem] xl:leading-[1.375rem]">
@@ -101,11 +121,10 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
 
             {entry.label && (
               <div
-                class="relative ml-10 xl:absolute xl:ml-0"
+                class="tl-label xl:absolute"
                 style={`--x:${geo.labels[i].x}%;--y:${geo.labels[i].y}px;--rot:${geo.labels[i].rot}deg`}
-                data-tl-label
               >
-                <span class="inline-block rounded-full bg-accent px-5 py-2 text-sm font-medium text-paper sm:text-base xl:text-xl">
+                <span class="inline-block rounded-full bg-action px-4 py-1.5 text-[0.8125rem] whitespace-nowrap text-fg sm:px-5 sm:py-2 sm:text-sm xl:text-xl">
                   {entry.label}
                 </span>
               </div>
@@ -118,9 +137,83 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
 </section>
 
 <style>
+  /*
+    Мобильная запись — «шаг» вертикального степпера: узел на оси, год-якорь,
+    метка рядом, текст под ними. Раньше метка висела отдельной строкой между
+    карточками, линия виляла к ней и обратно, и лента читалась как кисель:
+    ритма нет, пустоты между записями, глазу не за что зацепиться.
+    Год уже присутствует в тексте каждой записи, здесь он просто вынесен.
+  */
+  @media (width < 80rem) {
+    .tl-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas:
+        'year label'
+        'card card';
+      align-items: center;
+      column-gap: 0.75rem;
+      row-gap: 0.875rem;
+      padding-left: 3.25rem;
+    }
+
+    /* Порог 23.5rem: на 390px «2020/2021» и «глобализация и рост» в строку
+       ещё влезают (замер: 324px из 390), на 360px — уже нет. */
+    @media (width < 23.5rem) {
+      .tl-item {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          'year'
+          'label'
+          'card';
+        justify-items: start;
+        row-gap: 0.625rem;
+      }
+    }
+
+    .tl-node {
+      position: absolute;
+      left: 1rem;
+      top: 0.375rem;
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 9999px;
+      background: var(--color-accent);
+      box-shadow: 0 0 0 4px var(--color-ground);
+    }
+
+    .tl-year {
+      grid-area: year;
+      font-size: 1.375rem;
+      color: var(--color-accent);
+    }
+
+    .tl-label {
+      grid-area: label;
+      justify-self: start;
+    }
+
+    .tl-card {
+      grid-area: card;
+      /* колонка чтения: без ограничения на 1100px строка уходила
+         за 140 знаков, вдвое дальше комфортных 65–75 */
+      max-width: var(--container-prose);
+    }
+  }
+
   /* Абсолютная композиция включается только там, где карточки не сплющит. */
   @media (width >= 80rem) {
-    [data-tl-card] {
+    .tl-item {
+      display: contents;
+    }
+
+    .tl-node,
+    .tl-year {
+      display: none;
+    }
+
+    .tl-card {
       left: var(--x);
       top: var(--y);
       /* --w — ширина текстового блока в оригинале; поля добавляются снаружи,
@@ -131,11 +224,11 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
       margin-top: -1.375rem;
       margin-left: -1.75rem;
       padding: 1.375rem 1.75rem;
-      border-radius: 1.25rem;
+      border-radius: 1.5rem;
       background: var(--color-paper);
     }
 
-    [data-tl-label] {
+    .tl-label {
       left: var(--x);
       top: var(--y);
       /* координата — центр метки, поэтому смещаем на половину собственных размеров */

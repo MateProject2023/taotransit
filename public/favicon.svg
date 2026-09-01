@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TAO Transit">
+  <!--
+    Знак взят из логотипа: справа от «tao» стоят два штриха — короткий сплошной
+    и длинный, затухающий вправо. Это и есть графическая примета марки (транзит,
+    движение), и она единственная, что остаётся читаемой на 16 пикселях.
+    Цвета — брендовые токены: фон --brand, штрихи --paper.
+  -->
+  <defs>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F9FAFD"/>
+      <stop offset="0.55" stop-color="#F9FAFD" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#F9FAFD" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="#2C3192"/>
+  <rect x="6.5" y="11.4" width="12" height="3.4" rx="1.7" fill="#F9FAFD"/>
+  <rect x="6.5" y="17.9" width="19" height="3.4" rx="1.7" fill="url(#fade)"/>
+</svg>

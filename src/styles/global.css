@@ -1,18 +1,14 @@
 @import "tailwindcss";
 
 /* ─── Шрифт ──────────────────────────────────────────────────────────────
-   CraftworkSans — тот же, что на оригинале и в проекте mate.
-   Только woff2: поддержки хватает везде, где нам важно. */
+   CraftworkSans — тот же, что в пакете design-tokens/ и в проекте mate.
+   Начертание 500 (Medium) НЕ подключается намеренно: иерархия строится
+   контрастом 400 против 700 и 900, промежуточная ступень её размывает.
+   Файл лежит в design-tokens/fonts/, если другому направлению понадобится. */
 @font-face {
   font-family: 'CraftworkSans';
   src: url('/fonts/CraftworkSans-Regular.woff2') format('woff2');
   font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'CraftworkSans';
-  src: url('/fonts/CraftworkSans-Medium.woff2') format('woff2');
-  font-weight: 500;
   font-display: swap;
 }
 @font-face {
@@ -35,19 +31,69 @@
 }
 
 /* ─── Токены ─────────────────────────────────────────────────────────────
-   Значения сняты с живого сайта (см. CLAUDE.md → Design tokens).
-   accent-light существует в оригинале и используется для текстовых ссылок:
-   accent на фоне даёт 2.8:1 и проваливает WCAG AA, accent-light — 6:1. */
-@theme {
-  --color-ink: #11101c;
-  --color-ink-deep: #08070d;
-  --color-paper: #ebebf7;
-  --color-accent: #5b35e5;
-  --color-accent-light: #977bff;
+   Палитра выведена из брендового индиго MATE #2C3192 замерами, не на глаз.
+   Полное обоснование и таблица контрастов — DESIGN.md § 2.
 
-  --font-sans: 'CraftworkSans', 'Arial', sans-serif;
+   Вся шкала живёт в тоне 271–280°. Унаследованные от Тильды #5b35e5 (283°,
+   хрома 0.244) и #977bff (290°) выведены из системы: они на два шага
+   перенасыщены относительно брендового и тянут страницу в неон. */
+@theme {
+  /* Поверхности */
+  --color-ground: #0c0e17;      /* oklch(16.6% 0.019 274) — земля страницы */
+  --color-ground-deep: #04050a; /* провал: врезки, подложка видео */
+  --color-panel: #2b2e39;       /* пакет как есть; на светлой теме это редкая
+                                   тёмная врезка, здесь — основная карточка */
+  --color-brand: #2c3192;       /* пакет как есть. Заливает, но НЕ светит:
+                                   1.80:1 к земле — это плоскость, не лампа */
+  --color-brand-deep: #1d1a77;  /* пакет как есть */
+  --color-paper: #f9fafd;       /* пакет как есть — «включённый свет» */
+
+  /* Действие. Брендовый #2C3192 кнопкой на тёмном не работает: 1.80:1,
+     у кнопки нет края. Окно, где заливка отделяется от земли (≥3:1)
+     и держит светлый текст (≥4.5:1), — светлота 50–56%. */
+  --color-action: #505dcc;       /* 3.46:1 к земле, текст на ней 4.72:1 */
+  /* Наведения `--action-hover: #3f48b4` больше нет: заказчик развернул
+     направление — кнопка при наведении СВЕТЛЕЕТ, а текст на ней темнеет.
+     Пара берётся из уже существующих токенов: заливка уходит в --accent,
+     текст в --ground (7.38:1). Подробности — DESIGN.md § 5. */
+
+  /* Акценты */
+  --color-accent: #9296ff;      /* ссылки, ведущие числа — 7.36:1 */
+  --color-accent-line: #6d74d8; /* разделители, выноски — 4.71:1 */
+
+  /* Текст */
+  --color-ink: #111111;         /* на бумаге, 18.09:1 */
+  --color-ink-muted: #6c6e78;   /* пакет как есть: вторичный на бумаге, 5.07:1 */
+  --color-fg: #eaecf7;          /* основной, 16.35:1 */
+  --color-fg-muted: #b3b7c3;    /* тело абзацев, 9.61:1 */
+  --color-fg-faint: #8e929e;    /* подписи. 6.19:1 на земле, но всего 4.35:1
+                                   на панели — внутри карточек берите fg-muted */
+  --color-on-brand: #c0c3d1;    /* пакет как есть: вторичный на брендовом,
+                                   6.10:1. На тёмном сайте применим только
+                                   внутри индиговых секций */
+
+  /* Границы */
+  --color-line: #3f424e;        /* волосяная, декоративная */
+  --color-line-strong: #656875; /* различимая граница, 3.47:1 */
+  --color-line-on-brand: #4a4fa8; /* разделители внутри индиговых секций */
+
+  --color-alert: #f56055;       /* красный пакета #B00D13 рассчитан
+                                   на бумагу и на тёмном тонет */
+
+  --font-sans: 'CraftworkSans', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   --container-site: 1200px;
+  /* Колонка чтения. Одна величина на все секции: до этого 42rem стояли
+     в двух местах, а в «Услугах» текст шёл на 56rem — вдвое шире нормы. */
+  --container-prose: 42rem;
+
+  /* Порог десктопной раскладки таймлайна. Объявлен явно, потому что на него
+     завязаны ещё два места: @media в About.astro и matchMedia в timeline.ts. */
+  --breakpoint-xl: 80rem;
+
+  /* Движение: только ease-out, пружины не используются */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @layer base {
@@ -65,23 +111,50 @@
     overflow-x: clip;
   }
 
+  /* Светлый текст на тёмном читается легче, чем он есть, и компенсируется
+     по трём осям: интерлиньяж, трекинг и ступень веса. Третья ось запрещена
+     пакетом (500 не подключается), поэтому первые две работают за неё. */
   body {
-    background-color: var(--color-ink);
-    color: var(--color-paper);
+    background-color: var(--color-ground);
+    color: var(--color-fg);
     font-family: var(--font-sans);
     font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
+    font-kerning: normal;
   }
 
-  /* Оригинал — тёмный сайт без светлой темы; фиксируем это явно,
-     иначе браузер подмешает свои цвета в поля формы и скроллбары. */
+  /* Тёмный сайт без светлой темы; фиксируем явно, иначе браузер
+     подмешает свои цвета в поля формы и скроллбары. */
   :root {
     color-scheme: dark;
   }
 
   ::selection {
-    background-color: var(--color-accent);
-    color: var(--color-paper);
+    background-color: var(--color-action);
+    color: var(--color-fg);
+  }
+
+  /* Кольцо фокуса — элемент системы (DESIGN.md § 4), а не забота разметки.
+     Раньше тройка классов повторялась в 12 местах девяти компонентов, и смена
+     цвета акцента потребовала одинаковой правки во всех. :where() не добавляет
+     веса, поэтому точечное переопределение цвета в разметке продолжает
+     работать — например `outline-paper` на брендовой заливке. */
+  :where(a, button, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Заголовки набираются плотнее тела: крупному кеглю лишний трекинг вреден.
+     text-wrap: balance здесь намеренно нет: это бинарный поиск по ширине
+     строки, переигрываемый на каждой перевёрстке, а на однострочных h3
+     в аккордеоне он не даёт ничего. Балансируются только те заголовки,
+     что реально переносятся, — через утилиты и точечный класс. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -91,41 +164,77 @@
   }
 }
 
+/* ─── Раскладка ────────────────────────────────────────────────────────
+   Поля страницы: 16 / 40 / 80 px, а с 1024px их роль берёт на себя
+   max-width — контейнер центрируется, и широкие поля больше не нужны.
+
+   Границы заданы в rem, как брейкпоинты Tailwind в разметке. В пикселях они
+   разъезжались: у читателя с системным кеглем 20px `sm:` срабатывает на
+   800 CSS-px, а поля перескакивали уже на 640 — контейнер получал десктопные
+   отступы при мобильной типографике. */
 @utility site-container {
   width: 100%;
   max-width: var(--container-site);
   margin-inline: auto;
   padding-inline: 1rem;
 
-  @media (width >= 640px) {
-    padding-inline: 2rem;
+  @media (width >= 40rem) {
+    padding-inline: 2.5rem;
+  }
+  @media (width >= 48rem) {
+    padding-inline: 5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2.5rem;
   }
 }
 
-/* ─── Утилиты, снятые с оригинала ──────────────────────────────────────
-   Свечения: spread 0, радиус 36 или 72 px. Заголовок секции: 96/900/1.0. */
-@utility glow-accent-lg {
-  box-shadow: 0 0 72px 0 var(--color-accent);
-}
-@utility glow-accent {
-  box-shadow: 0 0 36px 0 var(--color-accent);
-}
-@utility glow-paper-lg {
-  box-shadow: 0 0 72px 0 var(--color-paper);
-}
-@utility glow-paper {
-  box-shadow: 0 0 36px 0 rgb(235 235 247 / 0.7);
+/* ─── Отблеск под действием ────────────────────────────────────────────
+   Было девять неоновых ореолов на страницу, остался один направленный
+   отблеск: под кнопкой первого экрана. Второй жил на финальном призыве,
+   который заказчик снял вместе с секцией.
+
+   Ореол `0 0 72px` светил во все стороны одинаково и читался как неон:
+   объект, который светится сам по себе. Здесь свет падает ВНИЗ, под кнопку,
+   с отрицательным spread — так ведёт себя предмет, подсвеченный сверху,
+   а не лампа. Идея «светится то, что работает» сохраняется, неон уходит. */
+@utility glow-cta {
+  box-shadow:
+    0 18px 40px -12px color-mix(in oklab, var(--color-action) 90%, transparent),
+    0 4px 12px -4px color-mix(in oklab, var(--color-action) 55%, transparent);
 }
 
-/* Заголовок секции: в оригинале 96px/900/line-height 1 */
+/* ─── Типографика ──────────────────────────────────────────────────────
+   Заголовок секции — самое громкое на странице: первый экран набран
+   логотипом-SVG, а не текстом, поэтому роль display занимают именно они. */
 @utility section-title {
   font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.01em;
+  line-height: 1.04; /* светлое на тёмном требует больше воздуха, чем 1.0 */
+  letter-spacing: -0.02em;
   font-size: clamp(2.75rem, 6.6vw, 6rem);
+  text-wrap: balance;
 }
 
-/* Кнопка-призыв: 72px высоты, радиус 12px, 24px/700 */
+/* Заголовок второго уровня: кейсы, тарифные карточки, «Все началось в 2013…» */
+@utility headline {
+  font-weight: 900;
+  line-height: 1.15;
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  text-wrap: balance;
+}
+
+/* Ведущее число: срок этапа, число в шутке достижения. Табличные цифры,
+   чтобы столбец сроков в «Этапах» выстроился по разряду. */
+@utility figure-lead {
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Кнопка ───────────────────────────────────────────────────────────
+   Радиус 12px снят с оригинала; капсульная форма пакета здесь не
+   применяется — у TAO кнопки прямоугольные и широкие. */
 @utility cta {
   display: flex;
   min-height: 3.5rem;
@@ -135,19 +244,231 @@
   padding-inline: 2rem;
   font-weight: 700;
   text-align: center;
-  transition: transform 0.2s;
+  /* Кнопка не двигается и не меняет размер — только цвет. Подъём на
+     translateY(-2px) снят заказчиком вместе с направлением наведения:
+     движение спорило со строками контактов в футере, где переход чисто
+     цветовой, и на длинной странице читалось как дребезг. */
+  transition:
+    background-color 200ms var(--ease-out-quart),
+    border-color 200ms var(--ease-out-quart),
+    color 200ms var(--ease-out-quart);
 
   @media (width >= 640px) {
     min-height: 4.5rem;
     font-size: 1.5rem;
   }
 
-  &:hover {
-    transform: scale(1.02);
+  /* Кнопке нужен зазор шире базового: кольцо вплотную к заливке теряется */
+  &:focus-visible {
+    outline-offset: 4px;
+  }
+}
+
+/* Основная кнопка. Наведение идёт ВВЕРХ по светлоте заливки и ВНИЗ по
+   светлоте текста: кнопка как будто включается. Пара замерена — #0C0E17
+   на #9296FF даёт 7.38:1, вдвое выше исходных 4.72:1.
+
+   Наведение только там, где оно есть: на тач-устройствах :hover залипает
+   после нажатия. */
+@utility cta-action {
+  background-color: var(--color-action);
+  color: var(--color-fg);
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-accent);
+      color: var(--color-ground);
+    }
+  }
+}
+
+/* Вторая кнопка пары. Заказчик просил, чтобы бот не терялся рядом с формой,
+   поэтому это не «призрак» с одной рамкой: у кнопки своя поверхность, та же
+   высота и тот же вес текста, что у основной.
+
+   Граница и текст взяты акцентом, а не нейтральным серым: с `#656875`
+   и белым текстом кнопка читалась как отключённая. Теперь пара работает
+   классической связкой «заливка + контур в том же тоне» — бот заметен,
+   но заливку, то есть свет, по-прежнему получает только первая кнопка.
+   Контраст замерен: `#9296FF` на `#2B2E39` даёт 5.16:1.
+
+   Наведение идёт ВНИЗ по светлоте, как у основной: панель подмешивается
+   к земле. Отдельный токен под это не заводился — оттенок выводится из двух
+   существующих и живёт в том же коридоре тона. */
+@utility cta-secondary {
+  border: 2px solid var(--color-accent);
+  background-color: var(--color-panel);
+  color: var(--color-accent);
+
+  /* Наведение приводит контурную кнопку к тому же состоянию, что и залитую:
+     светлая заливка, тёмный текст. Так пара «бот / форма» под наведением
+     ведёт себя одинаково, а в покое остаётся различимой. */
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: var(--color-ground);
+    }
+  }
+}
+
+/* Светлая кнопка на брендовой заливке — компонент `button-light` из пакета,
+   до сих пор существовавший только на бумаге. Свечения ей не полагается:
+   отблеск на странице один, и он у кнопки первого экрана.
+
+   Наведение уводит бумагу ВНИЗ по светлоте, подмешивая чернила: осветлять
+   некуда, #F9FAFD и так самая светлая точка системы. */
+@utility cta-light {
+  background-color: var(--color-paper);
+  color: var(--color-brand);
+
+  /* Единственное исключение из правила «фон светлеет»: светлеть бумаге
+     некуда, #F9FAFD и так самая светлая точка системы. Поэтому здесь
+     работает вторая половина правила — текст уходит в чернила. */
+  @media (hover: hover) {
+    &:hover {
+      color: var(--color-ink);
+    }
   }
 
-  &:active {
-    transform: none;
+  &:focus-visible {
+    outline-color: var(--color-paper);
+  }
+}
+
+/* ─── Поля формы ───────────────────────────────────────────────────────
+   Спецификация DESIGN.md § 5: радиус 4px — поле это не действие, и капля
+   скругления отличает его от кнопки; фон уходит в провал, потому что поле
+   стоит на карточке-панели и должно читаться как углубление, а не как
+   вторая карточка. Минимальная высота 48px — палец. */
+@utility field {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-line-strong);
+  background-color: var(--color-ground-deep);
+  padding: 0.75rem 1rem;
+  color: var(--color-fg);
+  transition: border-color 200ms var(--ease-out-quart);
+
+  &::placeholder {
+    color: var(--color-fg-faint);
+  }
+
+  /* Фокус показывает только граница, кольца нет — так решил заказчик.
+     Переход делает смену заметной, потому что 1px сам по себе тихий.
+
+     `outline: none` здесь не забывчивость, а необходимость: триггер списка
+     это <button>, и базовое правило из @layer base надело бы на него кольцо.
+     :where() в базе не даёт веса, поэтому эта строка его снимает.
+
+     Цена решения записана в DESIGN.md § 4: индикатор фокуса стал слабее
+     кольца, и вернуть его — одна строка. */
+  &:focus,
+  &:focus-visible {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--color-alert);
+  }
+}
+
+/* Триггер своего списка: то же поле, но с местом под значение и стрелку.
+   Объявлен ПОСЛЕ `field` — обе утилиты в одном слое, и flex переопределяет
+   блочное отображение только в этом порядке. */
+@utility field-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* ─── Свой список ──────────────────────────────────────────────────────
+   Нативный <select> на тёмном рисуется системой: в каждом браузере своя
+   стрелка, свои поля и свой белый выпадающий лист, к которому CSS не имеет
+   доступа. Поэтому здесь listbox на кнопке и <ul> — разметка своя, поведение
+   повторяет нативное (клавиатура, Escape, клик вне, поиск по первой букве).
+
+   Лист продолжает поле, а не висит над ним отдельной карточкой: тот же фон
+   и тот же радиус, различает их только тень выпадения. */
+@utility listbox {
+  position: absolute;
+  /* Ширина поля — нижняя граница, а не потолок: «Помощь в переводе средств»
+     в колонку 230px не влезала и обрезалась многоточием. Лист расширяется
+     вправо по содержимому и упирается в край экрана. */
+  inset-inline-start: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2.5rem));
+  top: calc(100% + 0.375rem);
+  z-index: 20;
+  max-height: 15rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-accent);
+  background-color: var(--color-ground-deep);
+  padding: 0.25rem;
+  box-shadow: 0 16px 32px -16px rgb(4 5 10 / 0.95);
+}
+
+@utility listbox-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-fg-muted);
+  transition: background-color 150ms var(--ease-out-quart);
+
+  /* Активный пункт — тот, на который смотрит клавиатура. Наведение мышью
+     ставит тот же класс, поэтому подсветка на странице всегда одна. */
+  &[data-active='true'] {
+    background-color: var(--color-panel);
+    color: var(--color-fg);
+  }
+
+  /* Галочка занимает место всегда, поэтому выбор не двигает строку */
+  & svg {
+    opacity: 0;
+    transition: opacity 150ms var(--ease-out-quart);
+  }
+
+  &[aria-selected='true'] {
+    color: var(--color-accent);
+  }
+
+  &[aria-selected='true'] svg {
+    opacity: 1;
+  }
+}
+
+/* ─── Лист документа ───────────────────────────────────────────────────
+   Нативный <dialog> ради того, что он даёт даром: фокус заперт внутри,
+   Escape закрывает, остальная страница получает inert. */
+@utility sheet {
+  width: min(46rem, calc(100vw - 1.5rem));
+  max-height: min(46rem, calc(100dvh - 2rem));
+  margin: auto;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-line-strong);
+  background-color: var(--color-panel);
+  padding: 0;
+  color: var(--color-fg);
+
+  /* Подложка не наследует токены в части браузеров, поэтому цвет здесь
+     записан числом. Это `--ground-deep` с прозрачностью. */
+  &::backdrop {
+    background-color: rgb(4 5 10 / 0.82);
   }
 }
 

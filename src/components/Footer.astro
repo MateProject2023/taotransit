@@ -2,43 +2,35 @@
 import { Image } from 'astro:assets';
 import logo from '../assets/img/logo-footer.svg';
 import bisma from '../assets/img/bisma-logo.png';
-import { footer, site } from '../content/landing';
+import { footer, site, footerLegal } from '../content/landing';
 
 const href = (key: keyof typeof site) =>
   key === 'email' ? `mailto:${site.email}` : site[key];
 ---
 
-<footer id="contacts" class="site-container scroll-mt-24 py-14 sm:py-20">
-  <div class="grid gap-12 lg:grid-cols-2 lg:gap-8">
-    <div class="flex flex-col">
-      <h2 class="text-4xl leading-none font-black sm:text-5xl">{footer.title}</h2>
+<footer id="contacts" class="site-container scroll-mt-24 pt-14 pb-28 sm:pt-20 sm:pb-24">
+  {/*
+    Ссылки прижаты вправо на любой ширине: выключка вправо включалась только
+    с 1024px, поэтому на планшете строки обрывались посередине колонки.
+    Ограничение пункта в 28rem осталось намеренно — оно держит длину линии
+    под ссылкой, а к правому краю блок прижимает `items-end`.
+  */}
+  <div class="grid gap-10 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-8">
+    <h2 class="text-4xl leading-none font-black sm:text-5xl">{footer.title}</h2>
 
-      <Image src={logo} alt="TAO Transit" loading="lazy" class="mt-10 w-64 sm:mt-16 sm:w-80" />
-
-      <a
-        href={site.bisma}
-        target="_blank"
-        rel="noopener"
-        class="mt-8 flex w-fit items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light"
-      >
-        <span class="font-medium">{footer.createdBy}</span>
-        <Image src={bisma} alt="BISMA" loading="lazy" class="h-8 w-auto sm:h-9" />
-      </a>
-    </div>
-
-    <ul class="flex flex-col gap-6 lg:items-end">
+    <ul class="flex flex-col items-end gap-6">
       {
         footer.links.map((link) => (
           <li class="w-full max-w-md">
             <a
               href={href(link.href as keyof typeof site)}
               {...link.href === 'email' ? {} : { target: '_blank', rel: 'noopener' }}
-              class="group block text-right text-xl font-medium transition-colors hover:text-accent-light focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light sm:text-2xl"
+              class="group block text-right text-xl transition-colors hover:text-accent sm:text-2xl"
             >
               {link.label}
               {/* градиентная линия под пунктом — как в оригинале */}
               <span
-                class="mt-2 block h-0.5 w-full bg-linear-to-r from-transparent to-accent transition-opacity group-hover:opacity-70"
+                class="mt-2 block h-0.5 w-full bg-linear-to-r from-transparent to-accent-line transition-opacity group-hover:opacity-70"
                 aria-hidden="true"
               />
             </a>
@@ -47,4 +39,46 @@ const href = (key: keyof typeof site) =>
       }
     </ul>
   </div>
+
+  {/*
+    Нижняя строка: марка слева, авторство справа, оба логотипа стоят на одной
+    линии дна (`items-end`). «Created by» — подпись над логотипом бюро.
+  */}
+  <div class="mt-16 flex flex-wrap items-end justify-between gap-x-6 gap-y-8 sm:mt-20">
+    <Image src={logo} alt="TAO Transit" loading="lazy" class="w-56 sm:w-72 lg:w-80" />
+
+    <a
+      href={site.bisma}
+      target="_blank"
+      rel="noopener"
+      class="flex flex-col items-end gap-2"
+    >
+      <span class="text-sm text-fg-muted sm:text-base">{footer.createdBy}</span>
+      <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
+    </a>
+  </div>
+
+  {/*
+    Документы. Одной колонкой под маркой, по левому краю, мелко и плотно:
+    это выходные данные, а не пункты меню. Открываются модальными окнами —
+    отдельных адресов у них пока нет, см. CLAUDE.md § «Юридические документы».
+  */}
+  <ul class="mt-3 flex flex-col items-start gap-1">
+    {
+      footerLegal.map((doc) => (
+        /* flex у пункта убирает строчную распорку: у inline-кнопки под ней
+           остаётся собственный интерлиньяж, и шаг между строками получался
+           вдвое больше заданного gap. */
+        <li class="flex">
+          <button
+            type="button"
+            data-legal-open={doc.id}
+            class="rounded-sm text-[0.6875rem] leading-snug font-normal text-fg-faint underline decoration-[0.5px] underline-offset-2 transition-colors hover:text-fg sm:text-xs"
+          >
+            {doc.label}
+          </button>
+        </li>
+      ))
+    }
+  </ul>
 </footer>

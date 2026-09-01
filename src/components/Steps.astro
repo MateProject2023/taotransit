@@ -2,46 +2,46 @@
 import { steps } from '../content/landing';
 ---
 
-<section id="steps" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
-  <h2 class="section-title">
-    {steps.title}
-  </h2>
+{/*
+  Оригинал — пять карточек в ряд разной высоты (следствие ручных координат
+  Zero Block). На 1200px каждая колонка выходила ~230px, а на планшете ряд
+  разваливался в 2+2+1.
 
-  {/*
-    Оригинальные карточки разной высоты — следствие ручных координат Zero Block.
-    Раскладываем сеткой: чередование «с подложкой / без» сохраняем, высоту
-    выравниваем — так ряд читается как один ритм, а не как случайная лесенка.
-  */}
-  <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-5 lg:gap-3">
-    {
-      steps.items.map((step, i) => {
-        const filled = i % 2 === 0;
-        return (
+  Здесь это пять строк манифеста: римская цифра, срок, описание. Сроки
+  выстраиваются в колонку и читаются как накладная — ровно то, ради чего
+  затевалась «цифра как герой». Побочный выигрыш: на телефоне строки
+  не ломаются вообще, отдельная мобильная раскладка не нужна.
+*/}
+<section id="steps" class="scroll-mt-24 bg-brand py-16 sm:py-20 lg:py-24">
+  <div class="site-container">
+    <h2 class="section-title">
+      {steps.title}
+    </h2>
+
+    <ol class="mt-8 lg:mt-12">
+      {
+        steps.items.map((step, i) => (
           <li
             data-anim
-            data-anim-delay={i * 0.1}
-            style="--anim-y:164px"
-            class:list={[
-              'flex min-h-64 flex-col rounded-[1.75rem] px-5 py-6 sm:min-h-72 lg:px-4',
-              filled && 'bg-linear-to-b from-ink to-accent',
-            ]}
+            data-anim-delay={i * 0.06}
+            style="--anim-y:48px"
+            class="grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-2 border-t border-line-on-brand py-6 last:border-b sm:gap-x-6 lg:grid-cols-[3.5rem_17rem_1fr] lg:py-8"
           >
-            <p class="text-2xl leading-none font-black sm:text-[2.25rem]">{step.duration}</p>
-            <p class="mt-3 leading-snug text-pretty text-paper/90 sm:mt-4">{step.text}</p>
             <span
-              class:list={[
-                'mt-auto pt-8 text-right text-5xl leading-none font-black sm:text-6xl',
-                // #5b35e5 на фоне даёт 2.76:1 — ниже AA даже для крупного текста;
-                // берём тот же оттенок, что в градиенте пилюль (4.4:1)
-                filled ? 'text-ink' : 'text-[#7d61f5]',
-              ]}
+              class="figure-lead text-xl text-accent sm:text-2xl lg:text-3xl"
               aria-hidden="true"
             >
               {step.numeral}
             </span>
+            <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.75rem]">
+              {step.duration}
+            </p>
+            <p class="col-span-2 leading-snug text-on-brand text-pretty sm:text-lg lg:col-span-1 lg:pl-4 lg:text-xl">
+              {step.text}
+            </p>
           </li>
-        );
-      })
-    }
-  </ol>
+        ))
+      }
+    </ol>
+  </div>
 </section>

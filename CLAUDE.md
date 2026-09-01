@@ -6,7 +6,9 @@ Guidance for Claude Code (claude.ai/code) working in this repository.
 
 A **rebuild of the taotransit.com landing page** — currently a Tilda one-pager — as a static Astro + Tailwind site. TAO Transit is a China→CIS freight-forwarding agent (buyout, consolidation, QC, delivery), same client family as the `mate` project in `../mate/mate`.
 
-**Current state: stage 1 (layout) is built.** Astro 7 + Tailwind 4 project with all 13 visible sections rebuilt, zero external requests, no console errors. `PLAN.md` holds the agreed staging.
+**Current state: stage 1 (layout) is built, the design refresh on top of it is done, and the lead form's front end is in.** Astro 7 + Tailwind 4, all 13 visible sections rebuilt, zero external requests, no console errors. `PLAN.md` holds the agreed staging.
+
+The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`, keeping the site dark. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). **The migration is done** — `DESIGN.md` § 7 records what changed and the one thing left open (the logo SVGs still carry `#5b35e5`).
 
 ### Project layout
 
@@ -14,12 +16,16 @@ A **rebuild of the taotransit.com landing page** — currently a Tilda one-pager
 - `src/components/*.astro` — one component per section, in page order.
 - `src/layouts/Layout.astro` — `<head>`, meta, OG, JSON-LD, font preload.
 - `src/styles/global.css` — `@theme` tokens + `@font-face` + `site-container` utility.
-- `reference/` — the acceptance material: `tilda-page.html` (original markup), `content-dump.txt` (per-section text), `assets/` (originals pulled from the CDN), `screenshots/` (original at 5 widths), `shots/` (our build, same widths), `hero-source-rutube.mp4`.
+- `PRODUCT.md` / `DESIGN.md` — the design brief and the target visual system. See "Design context".
+- `src/content/legal.ts` — the four legal documents and the consent-banner copy. See "Юридические документы".
+- `FORM.md` — **the lead-delivery spec** (Telegram + amoCRM): routing, request contract, full sources to copy, env vars, traps, rollout order and what is still unanswered. Everything about the form's insides lives there, not here.
+- `design-tokens/` — the vendored MATE brand package (tokens, font, README). Light-theme; ported, not imported.
+- `reference/` — the acceptance material: `tilda-page.html` (original markup), `content-dump.txt` (per-section text), `assets/` (originals pulled from the CDN), `screenshots/` (original at 5 widths), `shots/` (our build, same widths), `competitors/` (ChinaToday, Sinoruss, Forto at 1440 — the category we are steering away from), `hero-source-rutube.mp4`.
 - `scripts/capture-reference.mjs` — re-shoots the original; `scripts/shoot.mjs` — shoots our build. Both take widths as args.
 
-**Interactivity is three tiny inline scripts and nothing else**: the Rutube facade, the scroll-top button, and… that's it. The services accordion is `<details>`, the cases carousel is scroll-snap, the mobile nav is an overflow-scroll strip. No framework islands, no hydration.
+**Interactivity is a handful of tiny vanilla scripts and nothing else**: the video facade, the scroll-top button, the scroll animations, the timeline line, the lead form (`src/scripts/lead.ts`), the custom select (`src/scripts/select.ts`) and the legal dialogs plus consent banner (`src/scripts/legal.ts`). The services accordion is `<details>`, the cases carousel is scroll-snap, the mobile nav is an overflow-scroll strip, the legal documents are native `<dialog>`. No framework islands, no hydration.
 
-**Stage 1 (current) is layout only** — a faithful, improved rebuild of everything visible, to show the client. Form backend, analytics counter, hosting and the domain cutover are explicitly deferred to stage 2+. Don't build stage-2 machinery while stage 1 is running.
+**Stage 1 (current) is layout plus the form's front end** — a faithful, improved rebuild of everything visible, to show the client. The form **backend**, the analytics counter, hosting and the domain cutover are still deferred to stage 2+. Don't build stage-2 machinery while stage 1 is running.
 
 ## Source of truth for content
 
@@ -45,12 +51,14 @@ The live Tilda page **is** the spec: `https://taotransit.com/`. It is public —
 | 10 | `rec615999667` | «Этапы работы» — numbered V→I, counts **down** |
 | 11 | `rec617854248` + `rec617857179` + `rec617850570` | «Наши кейсы» + case cards |
 | 12 | `rec617826795` | «Tao Transit это про:» + mission |
-| 13 | `rec618180396` | «Как начать работу?» → concierge bot |
+| 13 | `rec618180396` | «Как начать работу?» → concierge bot — **rebuilt as «Как мы работаем»**; the anchor `#howtostart` is unchanged |
 | 14 | `rec618938766` | «Рост и развитие» |
-| 15 | `rec629222891` | Final CTA — «Начни с результата вместе с нами!» |
+| 15 | `rec629222891` | Final CTA — «Начни с результата вместе с нами!» — **removed by the client**; the form section took its place at the end of the funnel |
 | 16 | `rec616037673` | Footer — контакты, почта, тг-канал, менеджер, консьерж-бот |
 
 Interleaved `t215` records are decorative/spacer blocks (no text).
+
+**One block on the page has no Tilda counterpart:** the CTA band between «Наши кейсы» and «О нас» (`src/components/CasesCta.astro`, copy in `casesCta`). It was added on the client's instruction; its two lines are written, not ported. Same for the case-card `figureNote` captions and everything in `leadForm` / `legal.ts`. Everywhere else the wording is still the original.
 
 ~9 800 characters of copy total.
 
@@ -69,20 +77,34 @@ Interleaved `t215` records are decorative/spacer blocks (no text).
 
 ⚠️ **Do not harvest assets by parsing `data-original` / `srcset`** — Zero Block keeps its image URLs inside inline JS init objects, so attribute-based extraction finds only 4 of 15. Grep every `https://static.tildacdn.*` URL out of the raw HTML and filter by extension.
 
-### Design tokens, measured from the live CSS
+### Design tokens
 
-| Token | Value | Occurrences | Use |
+**The live palette is `DESIGN.md` § 2, not this table.** What follows is the *original Tilda* palette, kept for reading the reference screenshots and `reference/tilda-page.css`. It is being replaced — see "Design context" below.
+
+| Token | Value | Occurrences | Use on the original |
 |---|---|---|---|
 | Background | `#11101c` | 46 | page ground |
 | Text / headings | `#ebebf7` | 208 | body + headings |
 | Accent | `#5b35e5` | 153 | buttons, fills, decor |
-| Accent light | `#977bff` | 8 | **use for text links** |
-
-⚠️ `#5b35e5` on `#11101c` measures ≈**2.8:1** — below WCAG AA (4.5:1) for text. Keep it for fills and buttons; `#977bff` on the same ground is ≈**6:1** and passes. The site already ships both, so this costs nothing.
+| Accent light | `#977bff` | 8 | text links |
 
 Also present: `#08070d` (deeper-than-background), `#f3f1ff`.
 
-**Font: CraftworkSans** — the same face as `mate`. **Do not download it**: five weights in woff2 (Regular/Medium/Semibold/Bold/Black) already sit in `../mate/mate/src/styles/fonts/`, next to `craft-font.css`. Copy from there.
+⚠️ `#5b35e5` on `#11101c` measures ≈**2.8:1** — below WCAG AA. This is why the refreshed palette drops it: at oklch chroma 0.244 / hue 283 it sits two steps hotter than the MATE brand indigo and pulls the page toward neon.
+
+**Font: CraftworkSans** — the same face as `mate`. **Do not download it**: it ships in this repo at `design-tokens/fonts/` (woff2 + woff, five weights), and also sits in `../mate/mate/src/styles/fonts/`. The build serves woff2 from `public/fonts/`.
+
+**Weight 500 is not part of the system.** `design-tokens/craft-font.css` deliberately omits it: hierarchy is built on 400 vs 700 vs 900, and an intermediate step blurs it. The file is present in `fonts/` only in case another direction needs it. Our build currently violates this — `Medium` is declared in `global.css` **and** sits in a `<link rel="preload">`, i.e. 16 KB in the critical path for a banned weight, used in 7 places. Removing it is part of the refresh.
+
+⚠️ **Licensing, unresolved.** Craftwork Sans is a commercial face and it is committed to this repository. That is fine for a private repo; if `mate-and-partners` (or this one) is ever made public, check the licence before it ships. Flagged by the token-package author, not yet answered.
+
+### `design-tokens/` — the MATE brand package
+
+Vendored at the repo root, 216 KB with the font. `tokens.css` (46 CSS variables, no dependencies), `tokens.json` (same, machine-readable, with usage notes), `craft-font.css` + `fonts/`, and a `README.md` whose five rules are the reasoning behind the values.
+
+**It is a light-theme system** — `#F9FAFD` paper, `#111111` ink, `#2C3192` indigo, sections alternating between paper and brand for 30–60% of the vertical. This site is dark, so the package is **ported, not imported**: `DESIGN.md` § 2 records which tokens are taken verbatim (`brand`, `brand-deep`, `panel`, `paper`, `ink`), which are re-derived for a dark ground, and why. Do not `@import tokens.css` into `global.css` and expect it to work.
+
+Two things from the package that transfer unchanged and are easy to miss: hover moves **down** in lightness, never up; and `--panel: #2B2E39`, described there as a rare dark inset on paper, becomes the default raised card surface here — the same token with an inverted role.
 
 ### Two Rutube videos (found only at runtime — not in the HTML)
 
@@ -129,39 +151,114 @@ Footer links: concierge bot, `t.me/TradeWithMate_Rail` (manager), `t.me/+UfG8_bV
 - **Zero JS by default.** Popup, burger menu and phone mask are small vanilla scripts. No React islands on a one-pager — blanket `client:load` is the standard Astro anti-pattern.
 - `astro:assets` `<Image />` for all imagery (auto webp/avif, explicit dimensions, lazy by default).
 
-## The form (stage 2 — do not build during stage 1)
+## The form
 
-The Tilda markup contains a popup form (`rec629175892`, 11 `t-input`s, `data-tilda-formskey="7a831eecc53726e35e855bb967566459"`), but **nothing on the page opens it** (verified — see CTA table above) and the client confirms no form is in use. Tilda keeps receivers server-side (`formservices[]` is empty in the HTML), so it is still worth a glance in the Tilda panel before cutover — but the evidence says this popup is dead markup, not a live channel.
+**The whole mechanism lives in `FORM.md`. Read it before touching anything on either side of the form** — routing, request contract, the full sources to copy from `mate`, env vars, ten traps, the rollout order and the open questions are all there. What follows is only what a reader of this file needs to know.
 
-What we build in stage 2, **alongside** the bot link (the bot link is not replaced):
+**Front end: built (stage 1).** `src/components/LeadForm.astro` + `src/scripts/lead.ts` + `leadForm` in `landing.ts`. It is its own section `#lead`, placed **right after «Как мы работаем»** — the bot section explains how the service works and ends with a button into the bot, and the form is the second way in. Every CTA on the page anchors to it, so no anchor ever scrolls backwards. The section carries its own concierge-bot button beside the form; that is the page's only real fork. Every other CTA is a single button — `DESIGN.md` § 5 «Кнопка бота» has the reasoning, including why the paired buttons that existed briefly were removed.
 
-- A `mate`-style contact form → **Telegram + amoCRM**, with **UTM/tracking marks exactly as in `mate`**.
-- **Telegram: the concierge bot already on the site — `@taotransit_bot`** — posting to a **separate chat** (new `CHAT_ID`), not the one clients talk in. Needs from the client: the bot token (BotFather), plus the bot added to the target group with posting rights, to read its `chat_id`.
-  - Safe to do: `sendMessage` does **not** conflict with whatever runs that bot — a webhook and outbound sends coexist. **Never call `setWebhook`/`deleteWebhook` on this token** — that would silently break the client's live concierge flow.
+The «Что нужно» field is a custom listbox (`src/components/Select.astro` + `src/scripts/select.ts`), not a native `<select>` — on a dark form the native one renders a light system panel. It reproduces native keyboard behaviour; if you touch it, keep that.
+
+The client already assembles the complete request body: `requestId`, all 11 tracking marks, `_ym_uid` from the Metrica cookie, the relay/origin split and the fallback retry. Stage 2 adds addresses, not client code.
+
+⚠️ **Demo mode.** With neither `PUBLIC_LEAD_RELAY_URL` nor `PUBLIC_LEAD_ORIGIN_URL` set at build time, the form **sends nothing**: it shows the success screen and warns in the console. That is the state of every build right now — if the client tests the form, say so out loud. The mode switches off by itself once either address appears in `.env`.
+
+**Back end: not started.** No worker, no `src/lib/lead.js`, no `src/pages/api/lead.ts`, no secrets. Decisions already taken (details and reasoning in `FORM.md`):
+
+- **Telegram: the concierge bot already on the site — `@taotransit_bot`** — posting to a **separate chat** (new `CHAT_ID`), not the one clients talk in.
+  - `sendMessage` does **not** conflict with whatever runs that bot — a webhook and outbound sends coexist. **Never call `setWebhook`/`deleteWebhook` on this token**, and note that **`getUpdates` is also unusable** on a bot with a live webhook, so the chat id has to be obtained another way.
 - **amoCRM:** same account (`mategrouptrade`), **different pipeline** (`AMO_PIPELINE_ID`).
+- **Port the pipeline, not the framework.** `../mate/mate/src/lib/lead.js` is deliberately isomorphic — Web APIs only, no `next/*`, no `fs`, no `@/` alias — so it and the `workers/lead-relay` Worker move over unchanged. `FORM.md` § 8 carries both files verbatim, already retargeted, so the `mate` repo is not a dependency.
+- Known trap: `ALLOWED_ORIGINS` lives in one file but feeds two deploy targets — a change needs **both** a push and a manual `wrangler deploy`, or the receivers drift.
 
-**Port the pipeline, not the framework.** `../mate/mate/src/lib/lead.js` is deliberately isomorphic — Web APIs only, no `next/*`, no `fs`, no `@/` alias — so `normalizeLead` / `buildTelegramText` / `buildAmoUnsortedPayload` / `TRACKING_KEYS` / `deliverLead` and the `workers/lead-relay` Worker all move over unchanged. Read `../mate/mate/CLAUDE.md` § "Form submission" first; the constraints there (channel split, `retryable` duplicate protection, `ALLOWED_ORIGINS` shared between Worker and origin route, amo marks by `field_code` not id) apply verbatim.
+**About the Tilda popup.** The original markup contains a form (`rec629175892`, 11 `t-input`s, `data-tilda-formskey="7a831eecc53726e35e855bb967566459"`), but **nothing on the page opens it** (verified — see CTA table above) and the client confirms no form is in use. Tilda keeps receivers server-side (`formservices[]` is empty in the HTML), so it is worth a glance in the Tilda panel before cutover — but the evidence says this popup is dead markup, not a live channel. Our form is **not** a revival of it: `DESIGN.md` § 6 forbids modals, so the form is inline.
 
-Known trap from `mate`: `ALLOWED_ORIGINS` lives in one file but feeds two deploy targets — a change needs **both** a push and a manual `wrangler deploy`, or the receivers drift.
+## Юридические документы
+
+Four documents live in `src/content/legal.ts` and open as native `<dialog>` modals from the footer, from the consent line under the form button, and from the cookie banner. Rendered by `src/components/LegalDocs.astro`, wired by `src/scripts/legal.ts`.
+
+| id | Документ | Обязателен потому что |
+|---|---|---|
+| `privacy` | Политика в отношении обработки персональных данных | 152-ФЗ ст. 18.1 ч. 2 — оператор обязан опубликовать её |
+| `consent` | Согласие на обработку персональных данных | 152-ФЗ ст. 9 — основание обработки данных из формы |
+| `cookie` | Файлы cookie и технические данные | уведомление о сборе; на него ссылается плашка |
+| `terms` | Пользовательское соглашение | не обязательно строго, но входит в стандартный набор коммерческого сайта |
+
+⚠️ **These are a working draft written by a non-lawyer, not legal advice.** They describe exactly what the site does — that part is accurate and was written against the actual request body in `FORM.md` § 4 — but the client's lawyer has to read them before launch.
+
+### Что заказчик должен дозаполнить
+
+`legalCompany` in `src/content/legal.ts` has two values and five blanks. Blanks render as «—» in the requisites block of every document, so they are visible, not silently missing.
+
+- **Есть:** `name: 'Mate inc.'`, `email: 'keepintouch@matestrade.com'`.
+- **Нужно:** `legalName` (полное фирменное наименование), `address`, `registryNumber` (ОГРН/ОГРНИП или иностранный аналог), `taxNumber` (ИНН), `phone`, `updatedAt` (дата редакции документов).
+
+Note the mismatch worth raising with the client: `Mate inc.` reads as a foreign entity, while the documents are written for a Russian-facing site under 152-ФЗ. Which legal person is the оператор персональных данных decides whose ОГРН/ИНН goes in — and whether 152-ФЗ is the right frame at all.
+
+### Что ещё не сделано
+
+- **Отдельные адреса.** Модалка удовлетворяет «общедоступности» формально, но для проверки Роскомнадзора удобнее реальные URL — `/privacy`, `/consent`, `/cookie`, `/terms`. Когда тексты утвердят, стоит завести страницы и оставить модалки как быстрый доступ.
+- **Уведомление в Роскомнадзор о начале обработки ПДн.** Подаётся оператором, не нами. С 30 мая 2025 неподача — штраф до 300 000 ₽ (420-ФЗ). Сказать заказчику.
+- **Фиксация согласий.** Закон ждёт, что оператор сможет доказать факт согласия: IP, время, текст. Сейчас в заявку уходит IP и время, но текст согласия нигде не версионируется. Если понадобится — версия документа кладётся в тело заявки одним полем.
 
 ## Analytics
 
 The live page runs **Yandex.Metrica `94685921`** and no GA. The client wants **a new counter of their own**, added later. Note when doing it: the domain isn't changing, so dropping `94685921` discards the existing history — worth a second look before retiring it.
 
+Two things wait on that counter: the `sendForm` goal in `src/scripts/lead.ts` (the call site is marked, the call itself is absent) and `_ym_uid`, the one tracking mark that comes from a cookie rather than the URL — without a counter the cookie never exists and the mark ships empty.
+
+⚠️ **The counter must be gated on consent.** `analyticsAllowed()` in `src/scripts/legal.ts` returns true only after the visitor pressed «Принять» in the banner. Load the counter behind it, and re-check after the banner is answered — otherwise the «Только необходимые» button is a lie and the cookie policy text (`src/content/legal.ts`, § 2 of the cookie doc) becomes false. Bumping `cookieNotice.storageKey` re-asks everyone; do that if the set of trackers changes.
+
 SEO baseline on the current page is thin: `<title>` exists, **`meta description` does not**, `robots.txt` is Tilda's boilerplate and points at an `http://` sitemap. Parity is trivial; add description / OG / JSON-LD in the rebuild.
 
 ## Hosting
 
-**Undecided — deliberately.** Stage 1 needs only a preview URL for the client. The `mate` Timeweb VPS is a candidate for later (`147.45.157.229` is the live box, `89.223.70.95` is idle standby — the `mate-server` SSH alias points at the standby, not the live one). If we go there, read `mate`'s CLAUDE.md § "RU reachability / ТСПУ" **before** touching nginx or certbot: HTTP/2 on every `:443` listen line is load-bearing for Russian reachability, and `certbot --nginx --expand` can silently strip it.
+**Vercel, by the client's decision.** The repo is wired for it: no adapter, `output: 'static'`, Vercel's Astro preset builds `npm run build` → `dist/`. `vercel.json` pins the framework, the build command and three header rules. Nothing else is needed — connect the GitHub repo in the Vercel dashboard and it deploys.
+
+⚠️ **Vercel is unreliable from Russia without a VPN**, and the audience — sellers in RU/KZ/UZ — is exactly who has to open the link. This was the reason the earlier plan ruled Vercel out for the client preview (`PLAN.md` § 1.5). The client chose it anyway; say it out loud before the domain cutover, not after.
+
+### The site URL is env-driven
+
+`astro.config.mjs` resolves `site` from, in order: `PUBLIC_SITE_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `https://taotransit.com`. Everything absolute on the page comes out of it: canonical, `og:url`, `og:image`, JSON-LD `url`, `robots.txt`.
+
+That indirection is not decoration. **taotransit.com still serves the old Tilda site**, so a build that hardcodes it would point `og:image` at a file that does not exist on someone else's page and `canonical` at that page itself.
+
+### Indexing is gated on the host
+
+`src/lib/site.ts` answers one question — is this build on `taotransit.com`? Two things read it:
+
+- `src/pages/robots.txt.ts` — production emits `Allow: /` plus the sitemap; anything else emits `Disallow: /`.
+- `src/layouts/Layout.astro` — anything else also gets `<meta name="robots" content="noindex, nofollow">`.
+
+So the `*.vercel.app` deploy cannot become a duplicate of the client's live site. **At cutover, set `PUBLIC_SITE_URL=https://taotransit.com` in the Vercel project** — that flips both back on. `sitemap.xml` always names the production domain: it describes the site, not the deployment.
 
 taotransit.com currently sits behind **DDoS-Guard**. Any cutover has to start from a full DNS zone export — MX/TXT/SPF/DKIM included.
+
+### If Vercel turns out to be unreachable
+
+The `mate` Timeweb VPS remains the fallback (`147.45.157.229` is the live box, `89.223.70.95` is idle standby — the `mate-server` SSH alias points at the standby, not the live one). If we go there, read `mate`'s CLAUDE.md § "RU reachability / ТСПУ" **before** touching nginx or certbot: HTTP/2 on every `:443` listen line is load-bearing for Russian reachability, and `certbot --nginx --expand` can silently strip it.
+
+Note for stage 2: a Vercel deploy also changes the form's back end. Vercel supports the API route (`@astrojs/vercel` adapter, `prerender = false`), but amoCRM would then be called from outside Russia — see `FORM.md` § 11.
 
 ## Conventions
 
 - Copy lives in **one content module**, not inline in markup — the page is 100% Russian marketing copy that the client will revise.
 - **Anchors point where the original pointed**, and it is not obvious: Tilda hangs them on empty spacer records *before* the section. `#adventages` → «Почему мы?» (not the achievements strip, which has no anchor), `#services` → the services accordion, `#contacts` → footer. Verified against the original markup, don't "fix" them by name.
-- **The scope of "improved" is fixed: responsive behaviour and contrast only.** Section composition, order and visual concept stay as they are — the target is "as close as possible to the original, but built correctly". Zero Block's five hand-tuned breakpoint sets are re-authored as real fluid layout; nothing gets redesigned. Composition changes, if any, come later as a separate pass.
-- Reference screenshots at every original breakpoint are the acceptance artifact — capture them before rebuilding, compare after.
+- **Four scope passes are already closed.** The rebuild was "responsive behaviour and contrast only"; the refresh after it moved palette, typography, density and states onto the MATE tokens and re-authored four sections («Почему мы?», «Ценности», «Этапы работы», «Достижения»); the third added the lead form and, with it, the site's second contact channel; the fourth promoted the form to the page's primary destination (its own `#lead` section) and added the legal layer; the fifth rebuilt the tail — «Как начать работу ?» became «Как мы работаем» and was re-laid as a single vertical line, the form moved up behind it, and the final-CTA section was removed. Imagery and video were left untouched throughout, and still should be. Copy was touched exactly once, in the fifth pass, and only where the client dictated it (that section's heading and lead); everything else is still the original wording. Don't start a sixth pass without asking.
+- Reference screenshots at every original breakpoint are the acceptance artifact for *fidelity* questions — capture before, compare after. They stop being the acceptance criterion for the four sections being re-authored; for those, `DESIGN.md` is.
+
+## Design context
+
+Two root files carry the design brief. **Read them before any visual work**; every `impeccable` command loads them automatically.
+
+- **`PRODUCT.md`** — who the visitor is, what the page is for, brand personality, anti-references, five strategic principles. Register: `brand`.
+- **`DESIGN.md`** — the visual system: palette with measured contrast, type scale, elevation, components, do's and don'ts, and § 7, which records what the migration changed plus the one item left open.
+
+Three things from them worth carrying in your head:
+
+1. **The visitor already has an agent.** They are not shopping for logistics, they are deciding whether to switch. Every section answers "what happens when it goes wrong".
+2. **The North Star is «Ночная смена».** Dark is justified by the timezone gap — the seller reads at 1am Moscow time, the Yiwu warehouse has already started the next day — not by taste. The rule that follows: *light goes to what works* (deadlines, numbers, the bot button), never to decoration.
+3. **The humour is load-bearing.** «Обернуть скотчем 6 китайских стен», the 3D objects, the founders at the containers. They are what keeps the page from drifting into a Linear clone, which is the standard trap for dark-plus-violet. Don't tidy them away.
 
 ## Соответствие оригиналу: что снято замерами, а не на глаз
 

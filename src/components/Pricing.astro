@@ -9,22 +9,22 @@ import { pricing, site } from '../content/landing';
 
   <div class="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-2 lg:gap-8">
     <div
-      class="glow-accent rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10"
+      class="rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10"
     >
-      <h3 class="text-2xl leading-[1.2] font-black text-balance sm:text-3xl lg:text-4xl">
+      <h3 class="headline text-balance">
         {pricing.commission.title}
       </h3>
       <div class="mt-6 space-y-5 sm:mt-8">
         {
           pricing.commission.body.map((p) => (
-            <p class="leading-relaxed text-ink/80 text-pretty">{p}</p>
+            <p class="leading-relaxed text-ink-muted text-pretty">{p}</p>
           ))
         }
       </div>
     </div>
 
-    <div class="rounded-3xl border-2 border-accent bg-ink-deep/60 px-6 py-7 sm:px-9 sm:py-9">
-      <h3 class="text-2xl leading-[1.2] font-black sm:text-3xl lg:text-4xl">
+    <div class="rounded-3xl border border-line bg-panel px-6 py-7 sm:px-9 sm:py-9">
+      <h3 class="headline">
         {pricing.table.title}
       </h3>
 
@@ -38,11 +38,11 @@ import { pricing, site } from '../content/landing';
       <ul class="mt-4 space-y-4 sm:mt-5">
         {
           pricing.table.rows.map((row) => (
-            <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-accent-light">
-              <span class="font-medium sm:text-lg">{row.term}</span>
+            <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-accent">
+              <span class="sm:text-lg">{row.term}</span>
               {/* линия-выноска тянется между сроком и ценой, как в оригинале */}
-              <span class="h-px min-w-6 flex-1 bg-accent" aria-hidden="true" />
-              <span class="ml-auto max-w-[60%] text-right font-medium text-pretty sm:text-lg">
+              <span class="h-px min-w-6 flex-1 bg-accent-line" aria-hidden="true" />
+              <span class="ml-auto max-w-[60%] text-right text-pretty sm:text-lg">
                 {row.price}
               </span>
             </li>
@@ -50,13 +50,13 @@ import { pricing, site } from '../content/landing';
         }
       </ul>
 
-      <p class="mt-7 text-sm leading-snug text-paper/75 sm:mt-8">
+      <p class="mt-7 text-sm leading-snug text-fg-muted sm:mt-8">
         {pricing.table.noteBefore}
         <a
           href={site.bot}
           target="_blank"
           rel="noopener"
-          class="text-accent-light underline underline-offset-2 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-light"
+          class="text-accent underline underline-offset-2 transition-colors hover:text-fg"
         >
           {pricing.table.noteLink}
         </a>

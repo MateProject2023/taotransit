@@ -13,12 +13,14 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
   Оригинал — Zero Block: заголовок слева, четыре пилюли справа «лесенкой»,
   3D-объекты выступают за края. Композицию держим, ступеньки задаём
   шириной/выключкой, а не координатами.
+
+  Числа вынесены из строки и набраны крупно: «6 китайских стен» и
+  «300 индийских океанов» — это и есть шутка секции, а утопленные
+  в предложение цифры её не доносят.
 */}
 <section class="site-container py-16 sm:py-24 lg:py-32">
   <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-16">
-    <h2
-      class="section-title text-balance"
-    >
+    <h2 class="section-title">
       {achievements.title}
     </h2>
 
@@ -30,9 +32,10 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
             data-anim-delay={(i % 2) * 0.1}
             style={`--anim-x:${item.side === 'left' ? '-330px' : '330px'}`}
             class:list={[
-              'relative flex min-h-28 items-center rounded-[2.5rem] bg-linear-to-r from-accent to-[#7d61f5] px-6 py-5 sm:min-h-32 sm:px-8',
-              // ступеньки появляются только там, где есть запас по ширине
-              i % 2 === 0 ? 'lg:mr-auto lg:w-[88%]' : 'lg:ml-auto lg:w-[97%]',
+              'relative flex min-h-32 items-center rounded-[2.5rem] bg-linear-to-r from-brand to-action px-6 py-6 sm:min-h-36 sm:px-8',
+              // ступеньки: смещение в процентах живёт уже на планшете,
+              // а не только на десктопе, как было раньше
+              i % 2 === 0 && 'sm:w-[86%] lg:w-[84%]',
               item.side === 'left' ? 'justify-end text-right' : 'justify-start text-left',
             ]}
           >
@@ -42,18 +45,27 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
               aria-hidden="true"
               loading="lazy"
               class:list={[
-                'pointer-events-none absolute w-32 max-w-[38%] object-contain sm:w-40 lg:w-48',
+                'pointer-events-none absolute w-32 max-w-[36%] object-contain sm:w-40 lg:w-48',
                 // объект крупнее пилюли и выходит за её границы — как в оригинале
                 item.side === 'left' ? 'left-2 sm:-left-4' : 'right-2 sm:-right-4',
               ]}
             />
             <p
               class:list={[
-                'relative max-w-[58%] text-base leading-tight font-black text-pretty sm:text-lg lg:text-2xl',
+                'relative max-w-[60%] text-balance',
                 item.side === 'left' ? 'pl-2' : 'pr-2',
               ]}
             >
-              {item.text}
+              <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
+                {item.pre}
+              </span>
+              {' '}
+              <span class="figure-lead block text-3xl sm:text-4xl lg:text-5xl">
+                {item.figure}
+              </span>
+              <span class="text-sm leading-snug font-bold sm:text-base lg:text-lg">
+                {item.post}
+              </span>
             </p>
           </li>
         ))

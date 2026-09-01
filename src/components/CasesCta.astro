@@ -1,0 +1,29 @@
+---
+import { casesCta, ctas } from '../content/landing';
+---
+
+{/*
+  Призыв между кейсами и «О нас». Брендовая полоса, а не карточка на земле:
+  на той же поверхности, что и кейсы выше, призыв терялся между двумя
+  секциями, а панель повторяла бы карточку формы и читалась как вторая форма.
+  Полоса заодно держит чередование — земля / бренд через секцию.
+
+  Кнопка одна и светлая: `button-light` из пакета. Свечения ей не дано —
+  отблеск на странице один, у кнопки первого экрана.
+*/}
+<section class="bg-brand py-14 sm:py-16 lg:py-20">
+  <div
+    class="site-container grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-14"
+  >
+    <div data-anim style="--anim-y:40px">
+      <p class="headline text-balance">{casesCta.title}</p>
+      <p class="mt-3 leading-relaxed text-on-brand text-pretty sm:text-lg">
+        {casesCta.body}
+      </p>
+    </div>
+
+    <a href={ctas.formHref} class="cta cta-light text-lg lg:min-w-[18rem]">
+      {ctas.form}
+    </a>
+  </div>
+</section>

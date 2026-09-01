@@ -8,10 +8,11 @@ import Services from '../components/Services.astro';
 import Pricing from '../components/Pricing.astro';
 import Steps from '../components/Steps.astro';
 import Cases from '../components/Cases.astro';
+import CasesCta from '../components/CasesCta.astro';
 import About from '../components/About.astro';
 import HowToStart from '../components/HowToStart.astro';
 import Values from '../components/Values.astro';
-import FinalCta from '../components/FinalCta.astro';
+import LeadForm from '../components/LeadForm.astro';
 import Footer from '../components/Footer.astro';
 ---
 
@@ -25,10 +26,14 @@ import Footer from '../components/Footer.astro';
     <Pricing />
     <Steps />
     <Cases />
+    <CasesCta />
     <About />
-    <HowToStart />
     <Values />
-    <FinalCta />
+    <HowToStart />
+    {/* Форма идёт сразу за ботом: секция выше объясняет, как устроена
+        работа, и заканчивается кнопкой в бота — форма это второй способ
+        начать, а не отдельная тема. Все ссылки на неё смотрят вперёд. */}
+    <LeadForm />
   </main>
   <Footer />
 </Layout>
