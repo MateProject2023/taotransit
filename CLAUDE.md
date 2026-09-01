@@ -273,7 +273,12 @@ Note for stage 2: a Vercel deploy also changes the form's back end. Vercel suppo
 
 Copy has been touched three times, always on the client's explicit instruction: the fifth pass rewrote that one section's heading and lead; the sixth changed the «Почему мы?» guarantee line, the form's heading and consent line, and deleted every mention of money transfers. Everything else is still the original Tilda wording. Don't start a seventh pass without asking — and note that **four items of client feedback are deliberately still open**, listed at the end of `DESIGN.md` § 7 (first screen, «Этапы работы», «Как мы работаем», cases navigation).
 - Reference screenshots at every original breakpoint are the acceptance artifact for *fidelity* questions — capture before, compare after. Since the light migration they are **no longer the acceptance criterion for colour at all**; for anything visual, `DESIGN.md` is. They remain useful for layout, composition and copy.
-- `scripts/compare-feedback.mjs` shoots the live original, our build and mate's contact block at the same places and states, into `reference/compare/` (git-ignored — regenerate it, don't commit it). `scripts/contrast.mjs` measures a WCAG pair from the command line. Both exist because "на глаз" has already been wrong here more than once.
+- **Measure colour, don't look at it.** Three tools, all committed:
+  - `scripts/contrast-audit.mjs [ширины]` — walks every text node on the built page and checks it against the colour actually painted underneath, at each width. Exits non-zero on any AA failure. ⚠️ It parses `oklab()` on purpose: Tailwind v4 resolves `color-mix` results into that notation, and a naive `rgb()` parser reads the white 90% header pill as near-black and reports eight phantom failures.
+  - `scripts/contrast.mjs "#111 #F9FAFD" …` — one WCAG pair from the command line.
+  - `scripts/compare-feedback.mjs` — shoots the live original, our build and mate's contact block at the same places and states into `reference/compare/` (git-ignored — regenerate, don't commit).
+
+  These exist because "на глаз" has been wrong here four times: `#5b35e5` at 2.8:1, `--fg-faint` on panel at 4.35:1, the header items at 4.25:1 over the hero, and the phantom failures above.
 
 ## Design context
 
