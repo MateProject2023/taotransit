@@ -12,7 +12,7 @@ import { steps } from '../content/landing';
   затевалась «цифра как герой». Побочный выигрыш: на телефоне строки
   не ломаются вообще, отдельная мобильная раскладка не нужна.
 */}
-<section id="steps" class="scroll-mt-24 bg-brand py-16 sm:py-20 lg:py-24">
+<section id="steps" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
   <div class="site-container">
     <h2 class="section-title">
       {steps.title}
@@ -25,10 +25,10 @@ import { steps } from '../content/landing';
             data-anim
             data-anim-delay={i * 0.06}
             style="--anim-y:48px"
-            class="grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-2 border-t border-line-on-brand py-6 last:border-b sm:gap-x-6 lg:grid-cols-[3.5rem_17rem_1fr] lg:py-8"
+            class="grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-2 border-t border-line py-6 last:border-b sm:gap-x-6 lg:grid-cols-[3.5rem_17rem_1fr] lg:py-8"
           >
             <span
-              class="figure-lead text-xl text-accent sm:text-2xl lg:text-3xl"
+              class="figure-lead text-xl text-brand sm:text-2xl lg:text-3xl"
               aria-hidden="true"
             >
               {step.numeral}
@@ -36,7 +36,7 @@ import { steps } from '../content/landing';
             <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.75rem]">
               {step.duration}
             </p>
-            <p class="col-span-2 leading-snug text-on-brand text-pretty sm:text-lg lg:col-span-1 lg:pl-4 lg:text-xl">
+            <p class="col-span-2 leading-snug text-ink-muted text-pretty sm:text-lg lg:col-span-1 lg:pl-4 lg:text-xl">
               {step.text}
             </p>
           </li>

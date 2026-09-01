@@ -20,16 +20,20 @@ const errors = JSON.stringify(leadForm.errors);
 const { consent } = leadForm;
 ---
 
-<section id="lead" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
+<section id="lead" class="scroll-mt-24 bg-brand py-16 text-white sm:py-20 lg:py-24">
+  <div class="site-container">
   <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-14">
     <div>
-      <h2 class="section-title">{leadForm.title}</h2>
-      <p class="mt-6 max-w-(--container-prose) leading-relaxed text-fg-muted text-pretty sm:text-lg">
+      {/* Заголовок здесь мельче общесекционного: «Поделитесь» одним словом
+          шире своей колонки на 96px и наезжало на карточку формы. Замер:
+          колонка 530px, слово 560px. */}
+      <h2 class="section-title text-[clamp(2.25rem,4.6vw,4rem)]">{leadForm.title}</h2>
+      <p class="mt-6 max-w-(--container-prose) leading-relaxed text-on-brand text-pretty sm:text-lg">
         {leadForm.body}
       </p>
 
       {/* Вторая половина пары: форма справа, бот здесь, оба на виду */}
-      <a href={site.bot} target="_blank" rel="noopener" class="cta cta-secondary mt-8 text-lg">
+      <a href={site.bot} target="_blank" rel="noopener" class="cta cta-outline mt-8 text-lg">
         {ctas.bot}
       </a>
     </div>
@@ -40,7 +44,7 @@ const { consent } = leadForm;
         data-lead-errors={errors}
         data-lead-submitting={leadForm.submitting}
         novalidate
-        class="rounded-3xl border border-line bg-panel px-5 py-6 sm:px-8 sm:py-7"
+        class="rounded-3xl bg-white px-5 py-6 text-ink sm:px-8 sm:py-7"
       >
         {/* Honeypot: уведён за экран и скрыт от скринридеров — человек его
             не видит и не встретит табуляцией, робот заполняет. */}
@@ -53,7 +57,7 @@ const { consent } = leadForm;
 
         <div class="grid gap-4 sm:grid-cols-2 sm:gap-5">
           <p class="flex flex-col gap-2">
-            <label class="text-sm text-fg-muted" for="lead-name">{leadForm.fields.name.label}</label>
+            <label class="text-sm text-ink-muted" for="lead-name">{leadForm.fields.name.label}</label>
             <input
               class="field"
               id="lead-name"
@@ -67,7 +71,7 @@ const { consent } = leadForm;
           </p>
 
           <p class="flex flex-col gap-2">
-            <label class="text-sm text-fg-muted" for="lead-phone">{leadForm.fields.phone.label}</label>
+            <label class="text-sm text-ink-muted" for="lead-phone">{leadForm.fields.phone.label}</label>
             <input
               class="field"
               id="lead-phone"
@@ -82,7 +86,7 @@ const { consent } = leadForm;
           </p>
 
           <p class="flex flex-col gap-2">
-            <label class="text-sm text-fg-muted" for="lead-email">{leadForm.fields.email.label}</label>
+            <label class="text-sm text-ink-muted" for="lead-email">{leadForm.fields.email.label}</label>
             <input
               class="field"
               id="lead-email"
@@ -96,7 +100,7 @@ const { consent } = leadForm;
           </p>
 
           <div class="flex flex-col gap-2">
-            <span class="text-sm text-fg-muted" id="lead-need-label">{leadForm.fields.need.label}</span>
+            <span class="text-sm text-ink-muted" id="lead-need-label">{leadForm.fields.need.label}</span>
             <Select
               id="lead-need"
               name="need"
@@ -119,20 +123,20 @@ const { consent } = leadForm;
           >
         </p>
 
-        <button data-lead-submit type="submit" class="cta cta-action mt-6 w-full text-lg">
+        <button data-lead-submit type="submit" class="cta cta-brand mt-6 w-full text-lg">
           {leadForm.submit}
         </button>
 
-        <p class="mt-4 text-sm leading-snug text-fg-muted">
+        <p class="mt-4 text-sm leading-snug text-ink-muted">
           {consent.before}<button
             type="button"
             data-legal-open="consent"
-            class="rounded-sm text-left text-accent underline underline-offset-4 transition-colors hover:text-fg"
+            class="rounded-sm text-left text-brand underline underline-offset-4 transition-colors hover:text-brand-deep"
             >{consent.consentLink}</button
           >{consent.middle}<button
             type="button"
             data-legal-open="privacy"
-            class="rounded-sm text-left text-accent underline underline-offset-4 transition-colors hover:text-fg"
+            class="rounded-sm text-left text-brand underline underline-offset-4 transition-colors hover:text-brand-deep"
             >{consent.policyLink}</button
           >{consent.after}
         </p>
@@ -142,22 +146,23 @@ const { consent } = leadForm;
       <div
         data-lead-done
         tabindex="-1"
-        class="rounded-3xl border border-line bg-panel px-5 py-6 sm:px-8 sm:py-7"
+        class="rounded-3xl bg-white px-5 py-6 text-ink sm:px-8 sm:py-7"
         hidden
       >
         <p class="text-2xl leading-[1.2] font-black text-balance">{leadForm.success.title}</p>
-        <p class="mt-4 leading-relaxed text-fg-muted text-pretty sm:text-lg">
+        <p class="mt-4 leading-relaxed text-ink-muted text-pretty sm:text-lg">
           {leadForm.success.body}
         </p>
         <a
           href={site.bot}
           target="_blank"
           rel="noopener"
-          class="cta cta-action mt-6 w-full text-lg"
+          class="cta cta-brand mt-6 w-full text-lg"
         >
           {leadForm.success.cta}
         </a>
       </div>
     </div>
+  </div>
   </div>
 </section>

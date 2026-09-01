@@ -26,7 +26,7 @@ import { howToStart, site } from '../content/landing';
       preload="none" — до клика не качается ни байта, поэтому вес файла
       на первую загрузку не влияет. Постер и кнопка повторяют вид оригинала.
     */}
-    <div class="video-player relative overflow-hidden rounded-3xl bg-ground-deep">
+    <div class="video-player relative overflow-hidden rounded-3xl bg-panel">
       <video
         class="aspect-video w-full"
         poster={cover.src}
@@ -40,11 +40,11 @@ import { howToStart, site } from '../content/landing';
 
       <button
         type="button"
-        class="absolute inset-0 flex cursor-pointer items-center justify-center bg-ground/30 transition-colors hover:bg-ground/10"
+        class="absolute inset-0 flex cursor-pointer items-center justify-center bg-ink/30 transition-colors hover:bg-ink/10"
       >
         <span class="sr-only">Смотреть видео: {howToStart.video.title}</span>
         <span
-          class="flex size-16 items-center justify-center rounded-xl bg-action text-fg sm:size-20"
+          class="flex size-16 items-center justify-center rounded-xl bg-brand text-white sm:size-20"
           aria-hidden="true"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" class="ml-1 size-7 sm:size-9">
@@ -57,13 +57,13 @@ import { howToStart, site } from '../content/landing';
     {/* Подпись к ролику: одна строка по правому краю, мелко. Раньше это был
         отдельный призыв в 24px под кнопкой и он спорил с ней за внимание —
         а связь с менеджером здесь запасной ход, а не второй призыв. */}
-    <p class="mt-3 text-right text-xs leading-snug text-fg-faint sm:text-sm">
+    <p class="mt-3 text-right text-xs leading-snug text-ink-muted sm:text-sm">
       {howToStart.askLead}{' '}
       <a
         href={site.manager}
         target="_blank"
         rel="noopener"
-        class="text-accent underline underline-offset-2 transition-colors hover:text-fg"
+        class="text-brand underline underline-offset-2 transition-colors hover:text-brand-deep"
       >
         {howToStart.askLink}
       </a>
@@ -75,7 +75,7 @@ import { howToStart, site } from '../content/landing';
       href={site.bot}
       target="_blank"
       rel="noopener"
-      class="cta cta-action mt-6 text-lg"
+      class="cta cta-brand mt-6 text-lg"
     >
       {howToStart.cta}
     </a>

@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import logo from '../assets/img/logo-footer.svg';
+import logo from '../assets/img/logo-footer-ink.svg';
 import bisma from '../assets/img/bisma-logo.png';
 import { footer, site, footerLegal } from '../content/landing';
 
@@ -82,8 +82,14 @@ const REPEAT = 8;
         rel="noopener"
         class="flex flex-col items-end gap-2"
       >
-        <span class="text-sm text-fg-muted sm:text-base">{footer.createdBy}</span>
-        <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
+          <span class="text-sm text-ink-muted sm:text-base">{footer.createdBy}</span>
+        {/* Логотип бюро существует только в белом варианте (Bisma_logo_white2x)
+            и на бумаге исчезает полностью. Инвертировать нельзя — у него
+            радужная рамка, инверсия даст дополнительные цвета. Поэтому он
+            стоит на тёмной плашке: тот же --panel, что у контактных полос. */}
+        <span class="rounded-lg bg-panel px-3 py-2">
+          <Image src={bisma} alt="BISMA" loading="lazy" class="h-7 w-auto sm:h-9" />
+        </span>
       </a>
     </div>
 
@@ -102,7 +108,7 @@ const REPEAT = 8;
             <button
               type="button"
               data-legal-open={doc.id}
-              class="rounded-sm text-[0.6875rem] leading-snug font-normal text-fg-faint underline decoration-[0.5px] underline-offset-2 transition-colors hover:text-fg sm:text-xs"
+              class="rounded-sm text-[0.6875rem] leading-snug font-normal text-ink-muted underline decoration-[0.5px] underline-offset-2 transition-colors hover:text-ink sm:text-xs"
             >
               {doc.label}
             </button>

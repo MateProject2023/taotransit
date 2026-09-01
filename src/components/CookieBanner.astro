@@ -25,14 +25,14 @@ import { cookieNotice } from '../content/legal';
     role="dialog"
     aria-live="polite"
     aria-label="Сбор данных на сайте"
-    class="rounded-3xl border border-line-strong bg-panel px-4 py-4 sm:px-6 sm:py-5"
+    class="rounded-3xl border border-line bg-white px-4 py-4 sm:px-6 sm:py-5"
   >
-    <p class="text-sm leading-relaxed text-fg-muted text-pretty">
+    <p class="text-sm leading-relaxed text-ink-muted text-pretty">
       {cookieNotice.text}{' '}
       <button
         type="button"
         data-legal-open="cookie"
-        class="rounded-sm text-accent underline underline-offset-4 transition-colors hover:text-fg"
+        class="rounded-sm text-brand underline underline-offset-4 transition-colors hover:text-brand-deep"
       >
         {cookieNotice.more}
       </button>
@@ -42,14 +42,14 @@ import { cookieNotice } from '../content/legal';
       <button
         type="button"
         data-cookie-accept
-        class="flex min-h-11 grow basis-0 items-center justify-center rounded-xl bg-action px-4 font-bold whitespace-nowrap text-fg transition-colors hover:bg-accent hover:text-ground"
+        class="flex min-h-11 grow basis-0 items-center justify-center rounded-xl bg-brand px-4 font-bold whitespace-nowrap text-white transition-colors hover:bg-brand-deep"
       >
         {cookieNotice.accept}
       </button>
       <button
         type="button"
         data-cookie-decline
-        class="flex min-h-11 grow basis-0 items-center justify-center rounded-xl border border-line-strong px-4 whitespace-nowrap text-fg transition-[color,background-color,border-color] hover:border-accent hover:bg-accent hover:text-ground"
+        class="flex min-h-11 grow basis-0 items-center justify-center rounded-xl border border-line px-4 whitespace-nowrap text-ink transition-[color,background-color,border-color] hover:border-brand hover:bg-brand hover:text-white"
       >
         {cookieNotice.decline}
       </button>

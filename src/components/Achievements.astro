@@ -17,6 +17,9 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
   Числа вынесены из строки и набраны крупно: «6 китайских стен» и
   «300 индийских океанов» — это и есть шутка секции, а утопленные
   в предложение цифры её не доносят.
+
+  Пилюли залиты брендовым сплошняком: прежний градиент вёл к --action,
+  которого в светлой системе нет, а полутонов пакет не допускает.
 */}
 <section class="site-container py-16 sm:py-24 lg:py-32">
   <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-16">
@@ -32,7 +35,7 @@ const art = { 'tape-wall': tapeWall, boxes, ship, plane };
             data-anim-delay={(i % 2) * 0.1}
             style={`--anim-x:${item.side === 'left' ? '-330px' : '330px'}`}
             class:list={[
-              'relative flex min-h-32 items-center rounded-[2.5rem] bg-linear-to-r from-brand to-action px-6 py-6 sm:min-h-36 sm:px-8',
+              'relative flex min-h-32 items-center rounded-[2.5rem] bg-brand px-6 py-6 text-white sm:min-h-36 sm:px-8',
               // ступеньки: смещение в процентах живёт уже на планшете,
               // а не только на десктопе, как было раньше
               i % 2 === 0 && 'sm:w-[86%] lg:w-[84%]',

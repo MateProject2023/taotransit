@@ -10,14 +10,15 @@ type Card = { title: string; body: readonly string[] };
 
   Здесь сильнейшее утверждение выходит из сетки и становится вступительным
   заявлением (какое именно — задаёт поле `lead` в landing.ts), а остальные
-  живут на поверхности --panel с волосяной границей. Рамки сняты: именно они
-  делали секцию похожей на форму.
+  живут белыми карточками на брендовой заливке. Двухпиксельные рамки сняты:
+  именно они делали секцию похожей на форму.
 */
 const { lead } = whyUs;
 const columns: readonly (readonly Card[])[] = [whyUs.left, whyUs.right];
 ---
 
-<section id="adventages" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-28">
+<section id="adventages" class="scroll-mt-24 bg-brand py-16 text-white sm:py-20 lg:py-28">
+  <div class="site-container">
   <h2 class="section-title">
     {whyUs.title}
   </h2>
@@ -26,14 +27,14 @@ const columns: readonly (readonly Card[])[] = [whyUs.left, whyUs.right];
   <div
     data-anim
     style="--anim-y:40px"
-    class="mt-10 grid gap-6 border-t border-line pt-10 lg:mt-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-12"
+    class="mt-10 grid gap-6 border-t border-line-on-brand pt-10 lg:mt-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-14 lg:pt-12"
   >
     <p class="text-2xl leading-[1.15] font-black text-balance sm:text-3xl lg:text-[2.75rem]">
       {lead.title}
     </p>
     <div class="flex flex-col justify-center gap-4">
       {lead.body.map((p) => (
-        <p class="leading-relaxed text-fg-muted text-pretty sm:text-lg">{p}</p>
+        <p class="leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
       ))}
     </div>
   </div>
@@ -47,13 +48,13 @@ const columns: readonly (readonly Card[])[] = [whyUs.left, whyUs.right];
               data-anim
               data-anim-delay={i * 0.1}
               style={`--anim-x:${ci === 0 ? '-100px' : '100px'}`}
-              class="rounded-3xl border border-line bg-panel px-6 py-6 sm:px-8 sm:py-7"
+              class="rounded-3xl bg-white px-6 py-6 text-ink sm:px-8 sm:py-7"
             >
               <h3 class="text-xl leading-[1.2] text-balance sm:text-2xl">
                 {card.title}
               </h3>
               {card.body.map((p) => (
-                <p class="mt-4 leading-relaxed text-fg-muted text-pretty sm:text-lg">{p}</p>
+                <p class="mt-4 leading-relaxed text-ink-muted text-pretty sm:text-lg">{p}</p>
               ))}
             </article>
           ))}
@@ -62,12 +63,13 @@ const columns: readonly (readonly Card[])[] = [whyUs.left, whyUs.right];
               Пары с ботом здесь нет: она ведёт в форму, а бот стоит прямо
               над формой — дублировать его на полпути незачем. */}
           {ci === 1 && (
-            <a href={ctas.formHref} class="cta cta-action text-lg">
+            <a href={ctas.formHref} class="cta cta-light text-lg">
               {whyUs.cta}
             </a>
           )}
         </div>
       ))
     }
+  </div>
   </div>
 </section>

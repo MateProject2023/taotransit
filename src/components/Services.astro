@@ -15,21 +15,21 @@ const art = { buyout, consolidation, inspection, delivery };
   Аккордеон на <details>/<summary> — раскрытие, клавиатура и семантика
   достаются бесплатно, JS не нужен вовсе.
 
-  Секция залита брендовым индиго: первая из четырёх, дающих длинной
-  прокрутке членение. Свечение с бумажной шапки снято — оно означало
-  «здесь красиво», а не «сюда нажимать».
+  Секция на бумаге, а её шапка — брендовая карточка: роль перевернулась
+  вместе с системой. Раньше бумажная шапка светилась на индиговой заливке,
+  теперь индиговая карточка стоит на бумаге.
 */}
-<section id="services" class="scroll-mt-24 bg-brand py-14 sm:py-20 lg:py-24">
+<section id="services" class="scroll-mt-24 py-14 sm:py-20 lg:py-24">
   <div class="site-container">
     <div
       data-anim
       style="--anim-x:87px"
-      class="flex flex-col gap-2 rounded-3xl bg-paper px-6 py-6 sm:px-10 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
+      class="flex flex-col gap-2 rounded-3xl bg-brand px-6 py-6 text-white sm:px-10 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
     >
-      <h2 class="text-4xl leading-none font-black text-brand sm:text-5xl lg:text-6xl">
+      <h2 class="text-4xl leading-none font-black sm:text-5xl lg:text-6xl">
         {services.title}
       </h2>
-      <p class="max-w-md text-base leading-snug font-bold text-ink text-pretty sm:text-lg lg:text-xl">
+      <p class="max-w-md text-base leading-snug font-bold text-on-brand text-pretty sm:text-lg lg:text-xl">
         {services.kicker}
       </p>
     </div>
@@ -37,13 +37,13 @@ const art = { buyout, consolidation, inspection, delivery };
     <div class="mt-8 sm:mt-10">
       {
         services.items.map((item) => (
-          <details class="group border-t border-line-on-brand last:border-b">
+          <details class="group border-t border-line last:border-b">
             <summary
-              class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-xl leading-tight transition-colors marker:content-none hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper sm:py-6 sm:text-2xl lg:text-3xl [&::-webkit-details-marker]:hidden"
+              class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-xl leading-tight transition-colors marker:content-none hover:text-brand sm:py-6 sm:text-2xl lg:text-3xl [&::-webkit-details-marker]:hidden"
             >
               {item.title}
               <span
-                class="relative size-6 shrink-0 text-accent transition-transform duration-300 ease-out-quart group-open:rotate-45"
+                class="relative size-6 shrink-0 text-brand transition-transform duration-300 ease-out-quart group-open:rotate-45"
                 aria-hidden="true"
               >
                 <span class="absolute top-1/2 left-0 h-0.5 w-full -translate-y-1/2 rounded bg-current" />
@@ -64,7 +64,7 @@ const art = { buyout, consolidation, inspection, delivery };
                 />
               )}
               {item.body.map((p) => (
-                <p class="max-w-(--container-prose) leading-relaxed text-on-brand text-pretty sm:text-lg">{p}</p>
+                <p class="max-w-(--container-prose) leading-relaxed text-ink-muted text-pretty sm:text-lg">{p}</p>
               ))}
             </div>
           </details>

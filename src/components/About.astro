@@ -11,7 +11,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
   </h2>
 
   <div class="mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[1.7fr_1fr] lg:gap-8">
-    <div class="rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10">
+    <div class="rounded-3xl border border-line bg-white px-7 py-8 text-ink sm:px-9 sm:py-10">
       <p class="text-lg leading-snug text-pretty sm:text-xl">
         <strong class="font-bold text-brand">{about.missionLead}</strong>{about.mission}
       </p>
@@ -30,7 +30,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
         loading="lazy"
         class="w-full rounded-3xl object-cover"
       />
-      <figcaption class="mt-4 text-center text-fg-muted lg:text-right">
+      <figcaption class="mt-4 text-center text-ink-muted lg:text-right">
         {about.photoCaption}
       </figcaption>
     </figure>
@@ -66,7 +66,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
         geo.paths.map((d) => (
           <path
             d={d}
-            stroke="var(--color-accent)"
+            stroke="var(--color-brand)"
             stroke-width="4"
             stroke-linecap="round"
             vector-effect="non-scaling-stroke"
@@ -90,7 +90,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
     >
       <path
         data-timeline-mobile-path
-        stroke="var(--color-accent)"
+        stroke="var(--color-brand)"
         stroke-width="2"
         stroke-linecap="round"
         vector-effect="non-scaling-stroke"
@@ -109,7 +109,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
               style={`--x:${geo.cards[i].x}%;--y:${geo.cards[i].y}px;--w:${geo.cards[i].w}%`}
             >
               <div
-                class="space-y-4 rounded-3xl bg-paper px-6 py-6 text-ink sm:px-7 xl:px-0 xl:py-0"
+                class="space-y-4 rounded-3xl border border-line bg-white px-6 py-6 text-ink sm:px-7 xl:border-0 xl:px-0 xl:py-0"
               >
                 {entry.text.map((par) => (
                   <p class="leading-relaxed text-pretty xl:text-[1.125rem] xl:leading-[1.375rem]">
@@ -124,7 +124,7 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
                 class="tl-label xl:absolute"
                 style={`--x:${geo.labels[i].x}%;--y:${geo.labels[i].y}px;--rot:${geo.labels[i].rot}deg`}
               >
-                <span class="inline-block rounded-full bg-action px-4 py-1.5 text-[0.8125rem] whitespace-nowrap text-fg sm:px-5 sm:py-2 sm:text-sm xl:text-xl">
+                <span class="inline-block rounded-full bg-brand px-4 py-1.5 text-[0.8125rem] whitespace-nowrap text-white sm:px-5 sm:py-2 sm:text-sm xl:text-xl">
                   {entry.label}
                 </span>
               </div>
@@ -179,14 +179,14 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
       width: 0.75rem;
       height: 0.75rem;
       border-radius: 9999px;
-      background: var(--color-accent);
-      box-shadow: 0 0 0 4px var(--color-ground);
+      background: var(--color-brand);
+      box-shadow: 0 0 0 4px var(--color-paper);
     }
 
     .tl-year {
       grid-area: year;
       font-size: 1.375rem;
-      color: var(--color-accent);
+      color: var(--color-brand);
     }
 
     .tl-label {
@@ -225,7 +225,10 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
       margin-left: -1.75rem;
       padding: 1.375rem 1.75rem;
       border-radius: 1.5rem;
-      background: var(--color-paper);
+      /* рамка переезжает сюда с внутреннего блока: поля здесь, и только
+         здесь она обходит текст, а не липнет к нему */
+      border: 1px solid var(--color-line);
+      background: var(--color-white);
     }
 
     .tl-label {

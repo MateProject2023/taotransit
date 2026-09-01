@@ -19,20 +19,20 @@ import { cases } from '../content/landing';
   </div>
 
   <ul
-    class="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-8 lg:mt-12 lg:gap-6 [scrollbar-color:var(--color-accent)_transparent] [scrollbar-width:thin]"
+    class="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-8 lg:mt-12 lg:gap-6 [scrollbar-color:var(--color-brand)_transparent] [scrollbar-width:thin]"
     tabindex="0"
     aria-label="Кейсы, лента с прокруткой"
   >
     {
       cases.items.map((item) => (
-        <li class="flex w-[min(85vw,34rem)] shrink-0 snap-start flex-col rounded-3xl border border-line bg-panel px-6 py-7 sm:px-8 sm:py-9">
-          <h3 class="headline text-balance text-accent">
+        <li class="flex w-[min(85vw,34rem)] shrink-0 snap-start flex-col rounded-3xl border border-line bg-white px-6 py-7 sm:px-8 sm:py-9">
+          <h3 class="headline text-balance text-brand">
             {item.title}
           </h3>
 
           <div class="mt-5 space-y-4">
             {item.body.map((p) => (
-              <p class="leading-relaxed text-fg-muted text-pretty">{p}</p>
+              <p class="leading-relaxed text-ink-muted text-pretty">{p}</p>
             ))}
           </div>
 
@@ -44,8 +44,8 @@ import { cases } from '../content/landing';
 
           {/* подвал прижат к низу — он и держит нижнюю линию всей ленты */}
           <div class="mt-auto border-t border-line pt-6 sm:pt-7">
-            <p class="figure-lead text-3xl text-accent sm:text-[2.5rem]">{item.figure}</p>
-            <p class="mt-2 max-w-[24rem] text-sm leading-snug text-fg-muted text-pretty">
+            <p class="figure-lead text-3xl text-brand sm:text-[2.5rem]">{item.figure}</p>
+            <p class="mt-2 max-w-[24rem] text-sm leading-snug text-ink-muted text-pretty">
               {item.figureNote}
             </p>
           </div>

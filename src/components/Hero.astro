@@ -1,16 +1,22 @@
 ---
 import { Image } from 'astro:assets';
-import logo from '../assets/img/logo-2line-a.svg';
+import logo from '../assets/img/logo-2line-white.svg';
 import poster from '../assets/img/hero-poster.jpg';
 import { hero, ctas } from '../content/landing';
 ---
 
 {/*
+  Первая из шести брендовых секций (The Two Surfaces Rule): экран целиком
+  залит #2C3192, видео идёт под заливкой.
+
   Фон: в оригинале это iframe с Rutube — плеер, его скрипты и три чужих
   счётчика ради двадцати секунд немого видео. Отдаём тот же ролик сами,
   <video> вместо iframe: ~1.4 МБ против плеера и без стороннего трекинга.
 */}
-<section id="mainpic" class="relative isolate flex min-h-svh items-center overflow-hidden">
+<section
+  id="mainpic"
+  class="relative isolate flex min-h-svh items-center overflow-hidden bg-brand text-white"
+>
   <video
     class="absolute inset-0 -z-20 h-full w-full object-cover motion-reduce:hidden"
     poster={poster.src}
@@ -34,14 +40,13 @@ import { hero, ctas } from '../content/landing';
   >
   </div>
 
-  {/* затемнение: кадры у ролика разной светлоты, поэтому под текстом
-      плотнее, чем по краям — иначе на светлом кадре подпись тонет */}
-  <div class="absolute inset-0 -z-10 bg-ground/75" aria-hidden="true"></div>
-  <div
-    class="absolute inset-0 -z-10 bg-linear-to-b from-ground/40 via-ground/10 to-ground/60"
-    aria-hidden="true"
-  >
-  </div>
+  {/*
+    Брендовая вуаль вместо прежнего затемнения. Плотность 85% выбрана
+    замером по худшему кадру: даже поверх полностью белого кадра белый
+    текст получает 7.06:1. Градиента под ней больше нет — плоская вуаль
+    обслуживает и светлые, и тёмные кадры одна.
+  */}
+  <div class="absolute inset-0 -z-10 bg-brand/85" aria-hidden="true"></div>
 
   <div class="site-container pt-28 pb-16 sm:pt-32 sm:pb-24">
     <div class="grid items-center gap-8 text-center sm:gap-10 lg:grid-cols-[minmax(0,35rem)_minmax(0,36.25rem)] lg:justify-between lg:gap-10 lg:text-left">
@@ -65,10 +70,7 @@ import { hero, ctas } from '../content/landing';
             бот стоит над самой формой, куда эта кнопка и приводит, — второй
             раз предлагать его на первом экране значит делить первый выбор
             надвое там, где выбора ещё нет. */}
-        <a
-          href={ctas.formHref}
-          class="cta cta-action glow-cta mt-6 w-full text-xl lg:mt-8"
-        >
+        <a href={ctas.formHref} class="cta cta-light mt-6 w-full text-xl lg:mt-8">
           {hero.cta}
         </a>
       </div>

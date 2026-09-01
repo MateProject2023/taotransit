@@ -65,7 +65,7 @@ function setup(root: HTMLElement) {
     input.value = option.dataset.value ?? '';
     valueLabel.textContent = option.textContent?.trim() ?? '';
     // Пустой пункт — это подсказка, а не ответ, поэтому он остаётся приглушённым.
-    valueLabel.classList.toggle('text-fg-faint', !input.value);
+    valueLabel.classList.toggle('text-ink-muted', !input.value);
     close();
     trigger.focus();
   };
