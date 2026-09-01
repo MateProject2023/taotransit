@@ -3,14 +3,18 @@ import { steps } from '../content/landing';
 ---
 
 {/*
-  Оригинал — пять карточек в ряд разной высоты (следствие ручных координат
-  Zero Block). На 1200px каждая колонка выходила ~230px, а на планшете ряд
-  разваливался в 2+2+1.
+  Оригинал — пять карточек в ряд разной высоты, «лесенкой», с огромной
+  римской цифрой, утопленной в низ карточки. Мы свели это к пяти плоским
+  строкам: читалось чище, но заказчик прав — оригинал был интереснее,
+  и карточки вернулись.
 
-  Здесь это пять строк манифеста: римская цифра, срок, описание. Сроки
-  выстраиваются в колонку и читаются как накладная — ровно то, ради чего
-  затевалась «цифра как герой». Побочный выигрыш: на телефоне строки
-  не ломаются вообще, отдельная мобильная раскладка не нужна.
+  От прежней раскладки сохранён порядок чтения: срок → описание. Ровно
+  тот же порядок, ради которого затевалась «цифра как герой».
+
+  Ступеньку задаёт отступ сверху у чётных карточек, а не ручные
+  координаты, как в Zero Block. На планшете ряд из пяти колонок
+  разваливается, поэтому ступенька живёт только с 1024px, ниже —
+  две колонки, а на телефоне одна.
 */}
 <section id="steps" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
   <div class="site-container">
@@ -18,27 +22,39 @@ import { steps } from '../content/landing';
       {steps.title}
     </h2>
 
-    <ol class="mt-8 lg:mt-12">
+    <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-14 lg:grid-cols-5 lg:items-start lg:gap-5">
       {
         steps.items.map((step, i) => (
           <li
             data-anim
             data-anim-delay={i * 0.06}
             style="--anim-y:48px"
-            class="grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-2 border-t border-line py-6 last:border-b sm:gap-x-6 lg:grid-cols-[3.5rem_17rem_1fr] lg:py-8"
+            class:list={[
+              /* pb-20 держит место под цифрой: она лежит в потоке нижним
+                 слоем, и без запаса описание налезало бы на неё */
+              /* Минимальная высота — только с планшета: на телефоне карточки идут
+                 одной колонкой, выравнивать их не с чем, и у коротких («1 день»)
+                 под текстом оставалось до 120px пустоты. pb-20 остаётся везде:
+                 это место под цифру. */
+              'relative flex flex-col overflow-hidden rounded-3xl bg-brand px-5 pt-6 pb-20 text-white sm:min-h-56 sm:px-6 sm:pt-7',
+              i % 2 === 0 ? 'lg:min-h-[23rem]' : 'lg:mt-14 lg:min-h-[19rem]',
+            ]}
           >
+            <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.25rem]">
+              {step.duration}
+            </p>
+            <p class="mt-4 leading-snug text-on-brand text-pretty sm:text-lg lg:text-base">
+              {step.text}
+            </p>
+
+            {/* Цифра — тиснение, а не текст: читается фактурой карточки.
+                См. оговорку к The Deep Purple Rule в DESIGN.md § 2. */}
             <span
-              class="figure-lead text-xl text-brand sm:text-2xl lg:text-3xl"
+              class="figure-lead pointer-events-none absolute -bottom-3 right-4 text-[5rem] text-brand-deep select-none sm:text-[6.5rem]"
               aria-hidden="true"
             >
               {step.numeral}
             </span>
-            <p class="figure-lead text-3xl sm:text-4xl lg:text-[2.75rem]">
-              {step.duration}
-            </p>
-            <p class="col-span-2 leading-snug text-ink-muted text-pretty sm:text-lg lg:col-span-1 lg:pl-4 lg:text-xl">
-              {step.text}
-            </p>
           </li>
         ))
       }

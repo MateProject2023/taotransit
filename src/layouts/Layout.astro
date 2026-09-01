@@ -96,6 +96,7 @@ const indexable = isProductionHost(Astro.site);
       import { initSelects } from '../scripts/select';
       import { initLegal } from '../scripts/legal';
       import { initContacts } from '../scripts/contacts';
+      import { initCases } from '../scripts/cases';
       import { footer } from '../content/landing';
       initAnimations();
       initTimeline();
@@ -103,6 +104,7 @@ const indexable = isProductionHost(Astro.site);
       initSelects();
       initLegal();
       initContacts(footer.copied);
+      initCases();
     </script>
   </body>
 </html>

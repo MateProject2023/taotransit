@@ -4,22 +4,45 @@ import { cases } from '../content/landing';
 
 {/*
   Оригинал — карусель на скриптах Тильды. Здесь это лента с scroll-snap:
-  тот же жест, нулевой JS, работает с клавиатуры и не ломается без скриптов.
+  тот же жест, работает с клавиатуры и не ломается без скриптов.
+
+  Начало ленты выровнено по контейнеру (утилита `strip-inset`), а конец
+  уходит под правый край экрана. Раньше лента отсчитывала отступ от края
+  вьюпорта, и её первая карточка начиналась на 128px левее заголовка.
 
   Карточки в ленте одной высоты, а тексты кейсов различаются вдвое, и у
   коротких снизу пустовало до 46% карточки. Пустоту не убирали, а отдали
   под работу: подвал с ключевым числом прижат к низу, поэтому у всех
   карточек низ занят, а свободное место превратилось в паузу перед выводом.
 */}
-<section id="cases" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
-  <div class="site-container">
+<section id="cases" data-cases class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <div class="site-container flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
     <h2 class="section-title">
       {cases.title}
     </h2>
+
+    {/* Скрыто до инициализации: без JS кнопки были бы мёртвыми,
+        а лента и без них прокручивается свайпом и клавишами. */}
+    <div data-cases-nav hidden class="flex items-center gap-3 pb-1 sm:pb-2">
+      <span data-cases-counter class="figure-lead text-lg text-ink-muted tabular-nums sm:text-xl"></span>
+      <div class="flex gap-2">
+        <button type="button" data-cases-prev aria-label="Предыдущий кейс" class="cases-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="size-5">
+            <path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+        <button type="button" data-cases-next aria-label="Следующий кейс" class="cases-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="size-5">
+            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 
   <ul
-    class="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-8 lg:mt-12 lg:gap-6 [scrollbar-color:var(--color-brand)_transparent] [scrollbar-width:thin]"
+    data-cases-strip
+    class="strip-inset mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 lg:mt-12 lg:gap-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     tabindex="0"
     aria-label="Кейсы, лента с прокруткой"
   >
@@ -36,7 +59,7 @@ import { cases } from '../content/landing';
             ))}
           </div>
 
-          {/* вывод набран светлым, а не акцентом: акцент уже занят
+          {/* вывод набран чернилами, а не брендовым: акцент уже занят
               заголовком и числом, третий акцент в карточке — шум */}
           <p class="mt-6 text-lg leading-snug font-bold text-pretty">
             {item.result}

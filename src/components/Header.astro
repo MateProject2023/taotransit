@@ -7,6 +7,13 @@ import { nav } from '../content/landing';
   На узких экранах Тильда просто прятала три пункта из восьми — вместо этого
   делаем ленту с горизонтальной прокруткой: композиция та же, пункты все.
 
+  Порог, на котором лента перестаёт быть лентой, — 1024px, а не 640.
+  Замер: восьми пунктам нужно 926px, а ширина колонки доходит до этого
+  только к 1024. На прежнем пороге в 640 лента переставала прокручиваться,
+  оставаясь при этом уже содержимого, и «Контакты» оказывались обрезаны
+  и недоступны на всём диапазоне от 640 до 1080 — ровно то, чего лента
+  и была призвана не допустить.
+
   Пилюля белая, потому что шапка едет над обеими поверхностями: на фиолете
   она читается сама, на бумаге её очерчивает волосяная рамка — тот же приём
   «белое на бумаге приподнято без тени», что и у карточек.
@@ -16,13 +23,13 @@ import { nav } from '../content/landing';
   #6C6E78 даёт 4.25:1 и проваливает AA. Замерено, а не на глаз.
 */}
 <header class="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-6">
-  <div class="site-container">
+  <div class="header-container">
     <nav
       aria-label="Основная навигация"
       class="overflow-hidden rounded-full bg-white/90 ring-1 ring-line backdrop-blur-md"
     >
       <ul
-        class="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto px-2 py-2.5 text-sm whitespace-nowrap [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] [scrollbar-width:none] sm:justify-between sm:gap-2 sm:overflow-visible sm:px-6 sm:py-4 sm:text-[0.9375rem] sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"
+        class="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto px-2 py-2.5 text-sm whitespace-nowrap [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] [scrollbar-width:none] sm:gap-2 sm:px-4 sm:py-4 sm:text-[0.9375rem] lg:justify-between lg:overflow-visible lg:px-6 lg:[mask-image:none] [&::-webkit-scrollbar]:hidden"
       >
         {
           nav.map((item) => (
@@ -31,7 +38,7 @@ import { nav } from '../content/landing';
                 href={item.href}
                 {/* Заказчик просил подсвечивать сам блок раздела, а не только
                     его текст: в оригинале менялся лишь цвет на фиолетовый. */}
-                class="block rounded-full px-3 py-1.5 font-black text-ink transition-colors hover:bg-brand hover:text-white sm:px-4 sm:py-1.5"
+                class="block rounded-full px-3 py-1.5 font-black text-ink transition-colors hover:bg-brand hover:text-white lg:px-3.5"
               >
                 {item.label}
               </a>

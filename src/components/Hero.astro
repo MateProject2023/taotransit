@@ -49,28 +49,45 @@ import { hero, ctas } from '../content/landing';
   <div class="absolute inset-0 -z-10 bg-brand/85" aria-hidden="true"></div>
 
   <div class="site-container pt-28 pb-16 sm:pt-32 sm:pb-24">
-    <div class="grid items-center gap-8 text-center sm:gap-10 lg:grid-cols-[minmax(0,35rem)_minmax(0,36.25rem)] lg:justify-between lg:gap-10 lg:text-left">
+    {/*
+      Колонки выровнены по общему центру, без жёстких сдвигов. Прежний
+      `-translate-y-[53px]` уводил правую колонку так, что её низ
+      оказывался на 70px выше левой, и блоки переставали стоять друг
+      напротив друга.
+
+      Правой колонке отдано больше ширины, чем логотипу: подпись
+      «Ищем, выкупаем и отправляем товары из Китая с 2013 года» в
+      оригинале идёт одной строкой, а в узкой колонке ломалась на две —
+      отсюда и ощущение, что элементы мельче оригинала.
+    */}
+    <div class="grid items-center gap-8 text-center sm:gap-10 lg:grid-cols-[minmax(0,26rem)_minmax(0,38rem)] lg:justify-between lg:gap-12 lg:text-left xl:gap-16">
       <div>
         <Image
           src={logo}
           alt="TAO Transit"
-          class="mx-auto w-60 sm:w-80 lg:mx-0 lg:w-[25rem]"
+          class="mx-auto w-64 sm:w-80 lg:mx-0 lg:w-[26rem]"
           loading="eager"
         />
-        <p class="mt-4 text-lg leading-[1.55] text-balance sm:text-xl lg:mt-5 lg:max-w-[22rem] lg:text-[1.25rem] lg:text-pretty">
+        <p class="mt-5 text-lg leading-[1.45] text-balance sm:text-xl lg:mt-6 lg:max-w-[24rem] lg:text-[1.375rem] lg:text-pretty">
           {hero.tagline}
         </p>
       </div>
 
-      <div class="lg:-translate-y-[53px]">
-        <p class="text-lg leading-[1.55] text-balance sm:text-xl lg:text-[1.375rem] lg:text-pretty">
+      <div>
+        {/* 1.375rem — кегль подписи в оригинале (замер: 22/400). Крупнее она
+            не встаёт в одну строку ни в какой разумной колонке, а перенос
+            на две и есть то, из-за чего экран читался мельче оригинала. */}
+        <p class="text-lg leading-[1.45] text-balance sm:text-xl lg:text-[1.375rem] lg:text-pretty">
           {hero.lead}
         </p>
         {/* Одна кнопка, и она ведёт в форму. Пары с ботом здесь нет намеренно:
             бот стоит над самой формой, куда эта кнопка и приводит, — второй
             раз предлагать его на первом экране значит делить первый выбор
             надвое там, где выбора ещё нет. */}
-        <a href={ctas.formHref} class="cta cta-light mt-6 w-full text-xl lg:mt-8">
+        <a
+          href={ctas.formHref}
+          class="cta cta-light mt-6 w-full text-xl lg:mt-8 lg:min-h-[5.25rem] lg:text-[1.625rem]"
+        >
           {hero.cta}
         </a>
       </div>

@@ -87,6 +87,12 @@ const audit = () => {
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none') return;
     if (el.closest('[hidden]') || el.closest('.sr-only')) return;
+    /* aria-hidden — декоративный текст: он не доходит до скринридера, и
+       WCAG 1.4.3 выводит такой текст из-под требования к контрасту.
+       Здесь под это подпадают ровно римские цифры-тиснение в «Этапах»:
+       порядок шагов несёт сам <ol>, цифра его только повторяет фактурой.
+       ⚠️ Не прятать под aria-hidden настоящий текст, чтобы пройти проверку. */
+    if (el.closest('[aria-hidden="true"]')) return;
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const fg = parse(cs.color);
