@@ -73,6 +73,14 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
           />
         ))
       }
+
+      {/* Голова линии. Точка чертит змейку, и из неё вырастают карточки и
+          метки — механика в src/scripts/timeline.ts. Непрозрачность задана
+          атрибутом, а не стилем: без JS точки просто нет. Круг остаётся
+          круглым, потому что viewBox сходится с шириной один в один
+          (669 единиц на 63.29% от 1057px), — при `preserveAspectRatio="none"`
+          это не само собой разумеется. */}
+      <circle data-timeline-dot r="7" fill="var(--color-brand)" opacity="0" />
     </svg>
 
     {/*
@@ -104,8 +112,13 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
             <span data-tl-node class="tl-node" aria-hidden="true" />
             <span class="tl-year figure-lead">{entry.year}</span>
 
+            {/* Первая карточка не помечена намеренно: она стоит в начале
+                линии и видна сразу, остальные вырастают, когда линия до них
+                доходит. Порядок пометок = порядок кривых, на это опирается
+                collectReveals(). */}
             <div
               class="tl-card xl:absolute"
+              data-tl-card={i > 0 || undefined}
               style={`--x:${geo.cards[i].x}%;--y:${geo.cards[i].y}px;--w:${geo.cards[i].w}%`}
             >
               <div
@@ -124,7 +137,10 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
                 class="tl-label xl:absolute"
                 style={`--x:${geo.labels[i].x}%;--y:${geo.labels[i].y}px;--rot:${geo.labels[i].rot}deg`}
               >
-                <span class="inline-block rounded-full bg-brand px-4 py-1.5 text-[0.8125rem] whitespace-nowrap text-white sm:px-5 sm:py-2 sm:text-sm xl:text-xl">
+                <span
+                  data-tl-label
+                  class="inline-block rounded-full bg-brand px-4 py-1.5 text-[0.8125rem] whitespace-nowrap text-white sm:px-5 sm:py-2 sm:text-sm xl:text-xl"
+                >
                   {entry.label}
                 </span>
               </div>

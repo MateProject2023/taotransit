@@ -683,9 +683,24 @@
   transform-origin: left center;
 }
 
+/* Змейка «Все началось в 2013…»: карточки и метки вырастают из точки,
+   которая чертит линию (src/scripts/timeline.ts). Скрыты только там, где
+   эта линия есть: ниже 1280px лента вертикальная и читается сверху вниз,
+   прятать в ней нечего. Первая карточка не помечена — она стоит в начале
+   линии и видна сразу. */
+@media (width >= 80rem) {
+  .anim [data-tl-card],
+  .anim [data-tl-label] {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim [data-anim],
-  .anim [data-rule] {
+  .anim [data-rule],
+  .anim [data-tl-card],
+  .anim [data-tl-label] {
     opacity: 1;
     transform: none;
   }
