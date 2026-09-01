@@ -1,0 +1,80 @@
+---
+import '../styles/global.css';
+import { site } from '../content/landing';
+import ScrollTop from '../components/ScrollTop.astro';
+import ogImage from '../assets/img/hero-poster.jpg';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = site.title, description = site.description } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage.src, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="ru_RU" />
+    <meta property="og:site_name" content="TAO Transit" />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <script
+      type="application/ld+json"
+      set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'TAO Transit',
+        description: site.description,
+        url: 'https://taotransit.com/',
+        foundingDate: '2013',
+        areaServed: ['RU', 'KZ', 'UZ', 'CN'],
+        sameAs: [site.channel, site.bot],
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'sales',
+          email: site.email,
+          availableLanguage: ['ru'],
+        },
+      })}
+    />
+
+    <!-- Основное начертание грузим заранее: им набран весь первый экран -->
+    <script is:inline>
+      // без JS блоки видны сразу — начальное состояние анимаций ставится только здесь
+      document.documentElement.classList.add('anim');
+    </script>
+
+    <!-- Начертания первого экрана и заголовков: без предзагрузки подмена шрифта
+         переверстывает крупный текст и даёт сдвиг макета. -->
+    <link rel="preload" href="/fonts/CraftworkSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/CraftworkSans-Medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/CraftworkSans-Black.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <slot />
+    <ScrollTop />
+
+    <script>
+      import { initAnimations } from '../scripts/animations';
+      import { initTimeline } from '../scripts/timeline';
+      initAnimations();
+      initTimeline();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,24 @@
+---
+import { values } from '../content/landing';
+---
+
+<section class="site-container py-16 sm:py-20 lg:py-24">
+  <h2 class="section-title">
+    {values.title}
+  </h2>
+
+  <div class="mt-8 grid gap-5 sm:gap-6 lg:mt-12 lg:grid-cols-2">
+    {
+      values.items.map((item, i) => (
+        <article
+          data-anim
+          data-anim-delay={Math.floor(i / 2) * 0.1}
+          style={`--anim-x:${i % 2 === 0 ? '-100px' : '100px'}`}
+          class="rounded-3xl border-2 border-accent bg-ink-deep/60 px-6 py-6 sm:px-8 sm:py-8">
+          <h3 class="text-2xl leading-[1.2] text-balance sm:text-2xl">{item.title}</h3>
+          <p class="mt-4 leading-relaxed text-paper/85 text-pretty sm:text-lg">{item.body}</p>
+        </article>
+      ))
+    }
+  </div>
+</section>

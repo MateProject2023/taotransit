@@ -1,0 +1,41 @@
+---
+import { cases } from '../content/landing';
+---
+
+{/*
+  Оригинал — карусель на скриптах Тильды. Здесь это лента с scroll-snap:
+  тот же жест, нулевой JS, работает с клавиатуры и не ломается без скриптов.
+*/}
+<section id="cases" class="scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <div class="site-container">
+    <h2 class="section-title">
+      {cases.title}
+    </h2>
+  </div>
+
+  <ul
+    class="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-8 lg:mt-12 lg:gap-6 [scrollbar-color:var(--color-accent)_transparent] [scrollbar-width:thin]"
+    tabindex="0"
+    aria-label="Кейсы, лента с прокруткой"
+  >
+    {
+      cases.items.map((item) => (
+        <li
+          class="flex w-[min(85vw,34rem)] shrink-0 snap-start flex-col rounded-[2rem] border border-paper/25 bg-ink-deep/40 px-6 py-7 sm:px-8 sm:py-9"
+        >
+          <h3 class="text-2xl leading-[1.2] font-black text-balance text-accent-light sm:text-[2.25rem]">
+            {item.title}
+          </h3>
+          <div class="mt-5 space-y-4">
+            {item.body.map((p) => (
+              <p class="leading-relaxed text-paper/85 text-pretty">{p}</p>
+            ))}
+          </div>
+          <p class="mt-6 text-lg leading-snug font-black text-pretty text-accent-light sm:text-xl">
+            {item.result}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+</section>

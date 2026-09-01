@@ -1,0 +1,46 @@
+---
+import { services } from '../content/landing';
+---
+
+{/*
+  Аккордеон на <details>/<summary> — раскрытие, клавиатура и семантика
+  достаются бесплатно, JS не нужен вовсе.
+*/}
+<section id="services" class="site-container scroll-mt-24 py-12 sm:py-16 lg:py-20">
+  <div
+    data-anim style="--anim-x:87px" class="glow-accent flex flex-col gap-2 rounded-3xl bg-paper px-6 py-6 sm:px-10 sm:py-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
+  >
+    <h2 class="text-4xl leading-none font-black text-accent sm:text-5xl lg:text-6xl">
+      {services.title}
+    </h2>
+    <p class="max-w-xl text-sm leading-snug text-ink text-pretty sm:text-base">
+      {services.kicker}
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mt-10">
+    {
+      services.items.map((item) => (
+        <details class="group border-t-2 border-accent last:border-b-2">
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-xl leading-tight font-medium transition-colors marker:content-none hover:text-accent-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-light sm:py-6 sm:text-2xl lg:text-3xl [&::-webkit-details-marker]:hidden"
+          >
+            {item.title}
+            <span
+              class="relative size-6 shrink-0 text-accent transition-transform duration-300 group-open:rotate-45"
+              aria-hidden="true"
+            >
+              <span class="absolute top-1/2 left-0 h-0.5 w-full -translate-y-1/2 rounded bg-current" />
+              <span class="absolute top-0 left-1/2 h-full w-0.5 -translate-x-1/2 rounded bg-current" />
+            </span>
+          </summary>
+          <div class="pb-6 sm:pb-7">
+            {item.body.map((p) => (
+              <p class="max-w-4xl leading-relaxed text-paper/85 text-pretty sm:text-lg">{p}</p>
+            ))}
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</section>

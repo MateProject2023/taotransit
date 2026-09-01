@@ -1,0 +1,63 @@
+---
+import { Image } from 'astro:assets';
+import { achievements } from '../content/landing';
+import tapeWall from '../assets/img/ach-tape-wall.png';
+import boxes from '../assets/img/ach-boxes.png';
+import ship from '../assets/img/ach-ship.png';
+import plane from '../assets/img/ach-plane.png';
+
+const art = { 'tape-wall': tapeWall, boxes, ship, plane };
+---
+
+{/*
+  Оригинал — Zero Block: заголовок слева, четыре пилюли справа «лесенкой»,
+  3D-объекты выступают за края. Композицию держим, ступеньки задаём
+  шириной/выключкой, а не координатами.
+*/}
+<section class="site-container py-16 sm:py-24 lg:py-32">
+  <div class="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center lg:gap-16">
+    <h2
+      class="section-title text-balance"
+    >
+      {achievements.title}
+    </h2>
+
+    <ul class="flex flex-col gap-5 sm:gap-6">
+      {
+        achievements.items.map((item, i) => (
+          <li
+            data-anim
+            data-anim-delay={(i % 2) * 0.1}
+            style={`--anim-x:${item.side === 'left' ? '-330px' : '330px'}`}
+            class:list={[
+              'relative flex min-h-28 items-center rounded-[2.5rem] bg-linear-to-r from-accent to-[#7d61f5] px-6 py-5 sm:min-h-32 sm:px-8',
+              // ступеньки появляются только там, где есть запас по ширине
+              i % 2 === 0 ? 'lg:mr-auto lg:w-[88%]' : 'lg:ml-auto lg:w-[97%]',
+              item.side === 'left' ? 'justify-end text-right' : 'justify-start text-left',
+            ]}
+          >
+            <Image
+              src={art[item.image]}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              class:list={[
+                'pointer-events-none absolute w-32 max-w-[38%] object-contain sm:w-40 lg:w-48',
+                // объект крупнее пилюли и выходит за её границы — как в оригинале
+                item.side === 'left' ? 'left-2 sm:-left-4' : 'right-2 sm:-right-4',
+              ]}
+            />
+            <p
+              class:list={[
+                'relative max-w-[58%] text-base leading-tight font-black text-pretty sm:text-lg lg:text-2xl',
+                item.side === 'left' ? 'pl-2' : 'pr-2',
+              ]}
+            >
+              {item.text}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

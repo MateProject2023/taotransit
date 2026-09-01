@@ -1,0 +1,145 @@
+---
+import { Image } from 'astro:assets';
+import founders from '../assets/img/about-founders.png';
+import { about } from '../content/landing';
+import { timelineGeometry as geo } from '../content/timeline-geometry';
+---
+
+<section id="aboutus" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <h2 class="section-title">
+    {about.title}
+  </h2>
+
+  <div class="mt-8 grid gap-6 lg:mt-12 lg:grid-cols-[1.7fr_1fr] lg:gap-8">
+    <div class="glow-paper rounded-3xl bg-paper px-7 py-8 text-ink sm:px-9 sm:py-10">
+      <p class="text-lg leading-snug text-pretty sm:text-xl">
+        <strong class="font-bold text-accent">{about.missionLead}</strong>{about.mission}
+      </p>
+      <h3 class="mt-8 text-3xl leading-none font-black sm:text-4xl lg:text-5xl">
+        {about.valuesTitle}
+      </h3>
+      <ul class="mt-5 space-y-1 text-lg font-semibold text-accent sm:text-xl">
+        {about.values.map((v) => <li>•{v}</li>)}
+      </ul>
+    </div>
+
+    <figure class="flex flex-col">
+      <Image
+        src={founders}
+        alt={about.photoCaption}
+        loading="lazy"
+        class="w-full rounded-[1.5rem] object-cover"
+      />
+      <figcaption class="mt-4 text-center text-paper/80 lg:text-right">
+        {about.photoCaption}
+      </figcaption>
+    </figure>
+  </div>
+
+  <h3 class="mt-16 text-4xl leading-none font-black sm:text-5xl lg:mt-20 lg:text-[3rem]">
+    {about.timelineTitle}
+  </h3>
+
+  {/*
+    Змейка. На широких экранах повторяем композицию оригинала точно:
+    позиции карточек и меток сняты с живой страницы (reference/lines/coords.json),
+    кривые — те самые шесть path из его SVG. Метки лежат на линии и повёрнуты
+    по её наклону, как в оригинале.
+
+    Ниже 1280px абсолютная раскладка не выживает (карточки сужаются, текст
+    растёт), поэтому там — вертикальная ось. Разметка одна, различаются стили.
+  */}
+  <div
+    class="relative mt-10 lg:mt-14 xl:mx-auto xl:mt-16 xl:w-[1057px]"
+    style={`--tl-h:${geo.height}px`}
+  >
+    <svg
+      data-timeline-svg
+      class="pointer-events-none absolute hidden xl:block"
+      style={`left:${geo.svg.left}%;top:${geo.svg.top}px;width:${geo.svg.width}%;height:${geo.svg.height}px`}
+      viewBox={geo.viewBox}
+      preserveAspectRatio="none"
+      fill="none"
+      aria-hidden="true"
+    >
+      {
+        geo.paths.map((d) => (
+          <path
+            d={d}
+            stroke="var(--color-accent)"
+            stroke-width="4"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        ))
+      }
+    </svg>
+
+    {/* вертикальная ось — только для узких экранов */}
+    <div class="absolute inset-y-0 left-3 w-0.5 bg-accent/40 xl:hidden" aria-hidden="true"></div>
+
+    <ol class="flex flex-col gap-6 xl:block xl:h-(--tl-h) xl:gap-0">
+      {
+        about.timeline.map((entry, i) => (
+          <li class="contents">
+            <div
+              class="relative ml-10 xl:absolute xl:ml-0"
+              style={`--x:${geo.cards[i].x}%;--y:${geo.cards[i].y}px;--w:${geo.cards[i].w}%`}
+              data-tl-card
+            >
+              <div
+                class="space-y-4 rounded-[1.25rem] bg-paper px-6 py-6 text-ink sm:px-7 xl:px-0 xl:py-0"
+                data-tl-body
+              >
+                {entry.text.map((par) => (
+                  <p class="leading-relaxed text-pretty xl:text-[1.125rem] xl:leading-[1.375rem]">
+                    {par}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {entry.label && (
+              <div
+                class="relative ml-10 xl:absolute xl:ml-0"
+                style={`--x:${geo.labels[i].x}%;--y:${geo.labels[i].y}px;--rot:${geo.labels[i].rot}deg`}
+                data-tl-label
+              >
+                <span class="inline-block rounded-full bg-accent px-5 py-2 text-sm font-medium text-paper sm:text-base xl:text-xl">
+                  {entry.label}
+                </span>
+              </div>
+            )}
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  /* Абсолютная композиция включается только там, где карточки не сплющит. */
+  @media (width >= 80rem) {
+    [data-tl-card] {
+      left: var(--x);
+      top: var(--y);
+      /* --w — ширина текстового блока в оригинале; поля добавляются снаружи,
+         иначе текст переносится раньше и карточка становится выше,
+         из-за чего линии перестают доставать до её углов */
+      box-sizing: content-box;
+      width: var(--w);
+      margin-top: -1.375rem;
+      margin-left: -1.75rem;
+      padding: 1.375rem 1.75rem;
+      border-radius: 1.25rem;
+      background: var(--color-paper);
+    }
+
+    [data-tl-label] {
+      left: var(--x);
+      top: var(--y);
+      /* координата — центр метки, поэтому смещаем на половину собственных размеров */
+      transform: translate(-50%, -50%) rotate(var(--rot));
+    }
+  }
+</style>

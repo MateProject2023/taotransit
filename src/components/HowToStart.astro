@@ -1,0 +1,88 @@
+---
+import cover from '../assets/img/bot-video-cover.jpg';
+import { howToStart, site } from '../content/landing';
+---
+
+<section id="howtostart" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <div class="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-14">
+    <div>
+      <h2 class="section-title">
+        {howToStart.title}
+      </h2>
+      <p class="mt-6 text-xl leading-snug text-pretty sm:text-2xl lg:mt-8 lg:text-3xl">
+        {howToStart.lead}
+      </p>
+      <a
+        href={site.bot}
+        target="_blank"
+        rel="noopener"
+        class="cta glow-accent mt-8 bg-accent text-lg text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light"
+      >
+        {howToStart.cta}
+      </a>
+    </div>
+
+    <div>
+      {/*
+        Ролик лежит у нас, а не на Rutube: плеер и его трекеры со страницы ушли.
+        preload="none" — до клика не качается ни байта, поэтому вес файла
+        на первую загрузку не влияет. Постер и кнопка повторяют вид оригинала.
+      */}
+      <div class="video-player relative overflow-hidden rounded-3xl bg-ink-deep">
+        <video
+          class="aspect-video w-full"
+          poster={cover.src}
+          preload="none"
+          playsinline
+          controls={false}
+        >
+          <source src={howToStart.video.webm} type="video/webm" />
+          <source src={howToStart.video.mp4} type="video/mp4" />
+        </video>
+
+        <button
+          type="button"
+          class="absolute inset-0 flex cursor-pointer items-center justify-center bg-ink/30 transition-colors hover:bg-ink/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-light"
+        >
+          <span class="sr-only">Смотреть видео: {howToStart.video.title}</span>
+          <span
+            class="flex size-16 items-center justify-center rounded-2xl bg-accent text-paper sm:size-20"
+            aria-hidden="true"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="ml-1 size-7 sm:size-9">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <p class="mt-8 text-2xl leading-snug sm:text-3xl">
+        {howToStart.askLead}<br />
+        <a
+          href={site.manager}
+          target="_blank"
+          rel="noopener"
+          class="font-medium text-accent-light underline underline-offset-4 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-light"
+        >
+          {howToStart.askLink}
+        </a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  // до клика видео не загружается (preload="none"); клик включает
+  // родные элементы управления и запускает воспроизведение
+  document.querySelectorAll<HTMLElement>('.video-player').forEach((player) => {
+    const video = player.querySelector('video');
+    const button = player.querySelector('button');
+    if (!video || !button) return;
+
+    button.addEventListener('click', () => {
+      video.controls = true;
+      video.play();
+      button.remove();
+    });
+  });
+</script>

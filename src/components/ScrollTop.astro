@@ -1,0 +1,30 @@
+---
+// Кнопка «наверх» есть в оригинале (виджет Тильды) — повторяем своей.
+---
+
+<a
+  href="#mainpic"
+  id="scroll-top"
+  class="fixed right-4 bottom-4 z-40 flex size-12 translate-y-2 items-center justify-center rounded-full bg-paper text-ink opacity-0 transition-[opacity,transform] duration-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-light sm:right-8 sm:bottom-8 [&.is-visible]:translate-y-0 [&.is-visible]:opacity-100"
+  aria-hidden="true"
+  tabindex="-1"
+>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="size-5">
+    <path d="M6 15l6-6 6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>
+</a>
+
+<script>
+  const button = document.getElementById('scroll-top');
+  if (button) {
+    const toggle = () => {
+      const visible = window.scrollY > window.innerHeight * 0.8;
+      button.classList.toggle('is-visible', visible);
+      // вне зоны видимости кнопка не должна ловить фокус
+      button.setAttribute('aria-hidden', String(!visible));
+      button.tabIndex = visible ? 0 : -1;
+    };
+    toggle();
+    addEventListener('scroll', toggle, { passive: true });
+  }
+</script>

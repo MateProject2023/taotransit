@@ -1,0 +1,47 @@
+---
+import { steps } from '../content/landing';
+---
+
+<section id="steps" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
+  <h2 class="section-title">
+    {steps.title}
+  </h2>
+
+  {/*
+    Оригинальные карточки разной высоты — следствие ручных координат Zero Block.
+    Раскладываем сеткой: чередование «с подложкой / без» сохраняем, высоту
+    выравниваем — так ряд читается как один ритм, а не как случайная лесенка.
+  */}
+  <ol class="mt-8 grid gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-5 lg:gap-3">
+    {
+      steps.items.map((step, i) => {
+        const filled = i % 2 === 0;
+        return (
+          <li
+            data-anim
+            data-anim-delay={i * 0.1}
+            style="--anim-y:164px"
+            class:list={[
+              'flex min-h-64 flex-col rounded-[1.75rem] px-5 py-6 sm:min-h-72 lg:px-4',
+              filled && 'bg-linear-to-b from-ink to-accent',
+            ]}
+          >
+            <p class="text-2xl leading-none font-black sm:text-[2.25rem]">{step.duration}</p>
+            <p class="mt-3 leading-snug text-pretty text-paper/90 sm:mt-4">{step.text}</p>
+            <span
+              class:list={[
+                'mt-auto pt-8 text-right text-5xl leading-none font-black sm:text-6xl',
+                // #5b35e5 на фоне даёт 2.76:1 — ниже AA даже для крупного текста;
+                // берём тот же оттенок, что в градиенте пилюль (4.4:1)
+                filled ? 'text-ink' : 'text-[#7d61f5]',
+              ]}
+              aria-hidden="true"
+            >
+              {step.numeral}
+            </span>
+          </li>
+        );
+      })
+    }
+  </ol>
+</section>

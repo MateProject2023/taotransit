@@ -1,0 +1,50 @@
+---
+import { Image } from 'astro:assets';
+import logo from '../assets/img/logo-footer.svg';
+import bisma from '../assets/img/bisma-logo.png';
+import { footer, site } from '../content/landing';
+
+const href = (key: keyof typeof site) =>
+  key === 'email' ? `mailto:${site.email}` : site[key];
+---
+
+<footer id="contacts" class="site-container scroll-mt-24 py-14 sm:py-20">
+  <div class="grid gap-12 lg:grid-cols-2 lg:gap-8">
+    <div class="flex flex-col">
+      <h2 class="text-4xl leading-none font-black sm:text-5xl">{footer.title}</h2>
+
+      <Image src={logo} alt="TAO Transit" loading="lazy" class="mt-10 w-64 sm:mt-16 sm:w-80" />
+
+      <a
+        href={site.bisma}
+        target="_blank"
+        rel="noopener"
+        class="mt-8 flex w-fit items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light"
+      >
+        <span class="font-medium">{footer.createdBy}</span>
+        <Image src={bisma} alt="BISMA" loading="lazy" class="h-8 w-auto sm:h-9" />
+      </a>
+    </div>
+
+    <ul class="flex flex-col gap-6 lg:items-end">
+      {
+        footer.links.map((link) => (
+          <li class="w-full max-w-md">
+            <a
+              href={href(link.href as keyof typeof site)}
+              {...link.href === 'email' ? {} : { target: '_blank', rel: 'noopener' }}
+              class="group block text-right text-xl font-medium transition-colors hover:text-accent-light focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-light sm:text-2xl"
+            >
+              {link.label}
+              {/* градиентная линия под пунктом — как в оригинале */}
+              <span
+                class="mt-2 block h-0.5 w-full bg-linear-to-r from-transparent to-accent transition-opacity group-hover:opacity-70"
+                aria-hidden="true"
+              />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</footer>
