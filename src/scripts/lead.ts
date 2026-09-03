@@ -8,6 +8,8 @@
  * Режим выключается сам, как только в .env появляется адрес приёмника.
  */
 
+import { trackLead } from './analytics';
+
 /**
  * Копия TRACKING_KEYS из src/lib/lead.js (FORM.md § 8.1). Импортировать
  * серверный модуль сюда нельзя — он бандлится в воркер и в роут, а не в
@@ -90,10 +92,6 @@ async function submitLead(values: LeadValues): Promise<boolean> {
     // не URL-параметр: cookie Метрики, чтобы сшить сделку с визитом
     _ym_uid: readCookie('_ym_uid'),
   };
-
-  /* Цель Метрики. Своего счётчика у TAO пока нет (CLAUDE.md § Analytics),
-     поэтому вызова тут нет — но обёртка в try/catch обязательна, когда он
-     появится: неподгрузившийся счётчик не повод терять заявку. */
 
   if (DEMO) {
     console.warn(
@@ -227,6 +225,9 @@ export function initLeadForm() {
     }
 
     if (delivered) {
+      /* Цель считаем по факту доставки, а не по нажатию кнопки: иначе
+         в статистику попадут отправки, которые никуда не дошли. */
+      trackLead();
       form.hidden = true;
       if (done) {
         done.hidden = false;

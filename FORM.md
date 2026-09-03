@@ -1,30 +1,48 @@
 # Приём заявок: Telegram + amoCRM
 
 Механика внутрянки формы. Перенос рабочей интеграции с **matestrade.com** (Next.js 14) на этот
-проект (Astro 7). Текст самодостаточен — исходники приведены целиком, доступ к репозиторию `mate`
-не нужен.
+проект (Astro 7).
 
-**Что уже сделано:** фронт формы (этап 1). **Что не сделано:** ни одного приёмника — ни воркера,
-ни серверного эндпоинта, ни секретов. Пока их нет, форма работает в демо-режиме (см. § 1).
+**Что сделано:** фронт формы, общий модуль доставки, серверный приёмник, воркер, диагностические
+скрипты. Код работает целиком — не хватает только секретов.
+**Чего не хватает:** значений в `.env` (§ 10). Пока их нет, форма честно говорит «Не отправилось»
+вместо ложного «Готово» — см. § 1.
 
 Смежные документы: `PLAN.md` — этапы проекта, `DESIGN.md` § 5 — внешний вид полей и § 6 — почему
 второй канал вообще появился, `CLAUDE.md` § «The form» — решения по боту и воронке.
 
 ---
 
-## 1. Что уже стоит на фронте
+## 0. Карта файлов
 
 | Файл | Роль |
 |---|---|
-| `src/components/LeadForm.astro` | секция `#lead` — последняя на странице, сюда ведут все призывы. Состояния: покой / отправка / успех / ошибка |
-| `src/scripts/lead.ts` | сбор тела запроса, метки, два параллельных запроса, добор через фолбэк, демо-режим |
+| `src/components/LeadForm.astro` | секция `#lead`. Состояния: покой / отправка / успех / ошибка |
+| `src/scripts/lead.ts` | клиент: тело запроса, метки, два параллельных запроса, добор, демо-режим |
 | `src/components/Select.astro` + `src/scripts/select.ts` | свой список «Что нужно» вместо нативного `<select>` |
-| `src/content/landing.ts` → `leadForm`, `ctas` | текст формы, подписи полей, варианты списка и подписи парных кнопок |
-| `src/content/legal.ts` + `src/components/LegalDocs.astro` | документы, на которые ссылается строка согласия под кнопкой |
+| `src/content/landing.ts` → `leadForm`, `ctas` | тексты формы |
+| `src/content/legal.ts` + `src/components/LegalDocs.astro` | документы, на которые ссылается строка согласия |
+| **`src/lib/lead.js`** | **общий модуль доставки.** Изоморфный: его бандлят ОБА приёмника |
+| **`src/pages/api/lead.ts`** | серверный приёмник: amoCRM всегда, Telegram — когда воркера нет или он не справился |
+| **`workers/lead-relay/`** | Cloudflare Worker: только Telegram. На Vercel опционален, см. § 11 |
+| **`scripts/amo-fields.mjs`** | диагностика amoCRM: воронки, поля, тестовая заявка |
+| **`scripts/tg-chat.mjs`** | диагностика Telegram: бот, вебхук, chat_id, тестовое сообщение |
+| **`.env.example`** | шаблон переменных со всеми комментариями |
 
-Клиент уже собирает и шлёт **полное тело** по контракту § 4 — включая `requestId`, все
-11 рекламных меток и `_ym_uid` из cookie Метрики. Ничего дописывать на фронте под этап 2
-не придётся: нужны только адреса приёмников.
+Полужирным — то, что появилось на этапе 2.
+
+---
+
+## 1. Три состояния незаполненного конфига
+
+Их важно различать, потому что снаружи они выглядят по-разному, и одно из них когда-то молча
+съедало заявки.
+
+| Состояние | Что задано | Что видит человек | Что происходит |
+|---|---|---|---|
+| **Демо-режим** | ни `PUBLIC_LEAD_RELAY_URL`, ни `PUBLIC_LEAD_ORIGIN_URL` | «Готово, заявка у менеджера» | ни одного запроса; в консоли предупреждение |
+| **Приёмник есть, секретов нет** | `PUBLIC_LEAD_ORIGIN_URL`, но пустые `TG_*`/`AMO_*` | «Не отправилось. Напишите менеджеру» | запрос ушёл, приёмник ответил `503 not_configured` |
+| **Рабочий** | всё из § 10 | «Готово, заявка у менеджера» | заявка в беседе и в воронке |
 
 ### Демо-режим
 
@@ -32,13 +50,76 @@
 const DEMO = !RELAY_URL && !ORIGIN_URL
 ```
 
-Если ни `PUBLIC_LEAD_RELAY_URL`, ни `PUBLIC_LEAD_ORIGIN_URL` не заданы на сборке, `lead.ts`
-**не делает ни одного запроса**: показывает экран успеха и пишет в консоль
+`lead.ts` **не делает ни одного запроса**: показывает экран успеха и пишет в консоль
 `форма в демо-режиме: приёмник не настроен, заявка никуда не ушла`.
 
-⚠️ Это ровно то, что происходит на превью-сборке сейчас. Если заказчик тестирует форму до этапа 2 —
-предупредить: заявка не придёт никуда. Режим выключается сам, как только в `.env` появляется хотя бы
-один адрес; отдельной правки кода не требуется.
+⚠️ Это состояние безопасно ровно до момента, когда заказчик решит проверить форму сам. Если сборка
+демонстрируется до заполнения `.env` — сказать об этом вслух. Режим выключается сам, как только
+адрес приёмника появляется в окружении.
+
+### Почему «секретов нет» — это 503, а не 200
+
+Контракт серверного роута — «всегда 200»: показывать человеку 5xx за чужой сбой некуда, а повтор
+рождает дубли. Из него ровно одно исключение: **ни один запрошенный канал не настроен вовсе**
+(все статусы `skipped`, ни одного `error`). Это не сбой доставки, а незаполненный `.env`, и тогда
+«Готово, заявка у менеджера» было бы прямой ложью — заявка не потерялась по дороге, её никто и не
+отправлял. Роут отвечает `503 {error:"not_configured", retryable:false}`, форма показывает «Не
+отправилось» со ссылкой на Telegram, и человек доходит до менеджера сам.
+
+Ошибку канала (`error`) сюда не пускают: там заявка могла уйти, и повтор дал бы дубль — это
+остаётся 200 по контракту.
+
+Проверить состояние, ничего не отправляя: `curl https://<домен>/api/lead` — health-check печатает,
+какие каналы разрешены и какие настроены, не раскрывая ни одного секрета.
+
+### Если JS не доехал
+
+Форма живёт на JS: разметка — обычный `<form>`, отправку перехватывает
+`initLeadForm()` через `preventDefault()`. Это официальный рецепт Astro
+([Build forms with API routes](https://docs.astro.build/en/recipes/build-forms-api/)) —
+там форма тоже без `action`, а обработчик тоже делает `preventDefault` и `fetch`.
+
+Но у рецепта есть дыра, которую мы закрыли. **У формы стоит `method="post"`**, хотя
+нативной отправки не предполагается. Причина: по умолчанию `<form>` отправляется
+**GET'ом на свой же адрес**, и если скрипт не доехал или упал, имя, телефон и почта
+уехали бы в адресную строку — а оттуда в историю браузера, в логи сервера и в
+заголовок `Referer`. HTTPS от этого не спасает: OWASP
+«[Information exposure through query strings](https://owasp.org/www-community/vulnerabilities/Information_exposure_through_query_strings_in_url)»,
+[CWE-598](https://cwe.mitre.org/data/definitions/598.html). У рецепта Astro поля хотя
+бы помечены `required`, и браузер блокирует пустую отправку; у нас `novalidate` и ни
+одного `required` (валидация своя, с русскими текстами), так что без POST утечка
+случилась бы гарантированно.
+
+`action` не задан намеренно: цель — **не разгласить** заявку, а не доставить её без JS.
+Принять form-encoded тело приёмнику всё равно нечем, и `action="/api/lead"` показал бы
+человеку голое `ok` вместо страницы, потеряв заявку так же молча.
+
+Проверено в браузере с выключенным JS: отправка даёт `POST /`, адрес не меняется,
+в URL не попадает ничего.
+
+**Вторая половина той же защиты — в `Layout.astro`:** каждый `init*` обёрнут в свой
+`try/catch`, и форма инициализируется первой. Раньше она шла четвёртой, за таймлайном,
+и падение таймлайна оставило бы её без обработчика `submit` — то есть ровно в том
+сценарии, ради которого нужен `method="post"`. Подробности — `CLAUDE.md`, раздел про
+интерактивность.
+
+### Почему не Astro Actions
+
+[Actions](https://docs.astro.build/en/guides/actions/) — штатный способ Astro 5+, и
+документация советует их вместо API-роутов: zod-валидация, типобезопасный вызов,
+`ActionError`. Нам они не подошли по трём причинам, и первые две — из самих доков.
+
+1. **Прогрессивное улучшение через Actions потребовало бы снять пререндер со всей
+   страницы**: «Pages must be on-demand rendered when calling actions using a form
+   action». У нас единственный on-demand роут — приёмник; лендинг остаётся статикой.
+2. **Безопасности сверх нашей они не дают.** Action публикуется как открытый эндпоинт
+   `/_actions/<name>`, и доки требуют «те же проверки авторизации, что и для
+   API-эндпоинтов».
+3. **Приёмника два, и логику доставки бандлит Cloudflare Worker.** Action — конструкция
+   Astro; в воркер её не занести, общий модуль `src/lib/lead.js` пришлось бы раздвоить.
+
+Actions — для форм, которые пишут в свою же базу. У нас внешняя доставка в два канала
+с общим кодом.
 
 ### Honeypot
 
@@ -50,61 +131,82 @@ const DEMO = !RELAY_URL && !ORIGIN_URL
 
 ## 2. Маршрут заявки
 
-Браузер шлёт **два независимых запроса параллельно**. Это не фолбэк-цепочка, а сознательное
-разделение каналов по приёмникам:
+Схема рассчитана на два приёмника, но **второй опционален** (§ 11). Полный вид:
 
 ```
 браузер (форма) — два параллельных запроса
    ├─► Cloudflare Worker            {channels:["telegram"]}   таймаут клиента 4 с
    │        └────► api.telegram.org
-   └─► серверный эндпоинт сайта     {channels:["amo"]}        таймаут клиента 9 с
+   └─► /api/lead                    {channels:["amo"]}        таймаут клиента 9 с
             └────► amocrm.ru (Неразобранное), напрямую
 
 если воркер не ответил или вернул retryable:true
-   └─► серверный эндпоинт сайта     {channels:["telegram"], via:"fallback"}
+   └─► /api/lead                    {channels:["telegram"], via:"fallback"}
             └────► api.telegram.org
 ```
 
+Без воркера (`PUBLIC_LEAD_RELAY_URL` пуст) клиент сам сворачивается в один запрос:
+
+```
+браузер (форма) ──► /api/lead   {channels:["amo","telegram"]}
+                        ├────► api.telegram.org
+                        └────► amocrm.ru
+```
+
+Никакой правки кода это не требует: `useRelay = Boolean(RELAY_URL)` в `src/scripts/lead.ts`.
+
 | Канал | Маршрут | Причина |
 |---|---|---|
-| Telegram | браузер → Cloudflare Worker | изолирует отправку от возможной блокировки Telegram на российском хостинге; там же rate limit |
-| amoCRM | браузер → серверный эндпоинт сайта → `amocrm.ru` | amoCRM — российский сервис, сервер в РФ отвечает ему за ~0.5 с. Хоп через Cloudflare добавил бы только латентность и вторую точку отказа |
+| Telegram | браузер → воркер, иначе → сервер | воркер изолирует отправку от возможной блокировки Telegram на российском хостинге; там же rate limit |
+| amoCRM | браузер → серверный роут → `amocrm.ru` | всегда напрямую: лишний хоп добавил бы латентность и вторую точку отказа |
 
 Разделение **закреплено в конфиге, а не в договорённости**: у воркера стоит `LEAD_CHANNELS: "telegram"`,
 и `resolveChannels()` пересекает запрошенное клиентом с этим потолком. Даже клиент, попросивший
 у воркера `amo`, получит отказ по этому каналу.
 
 **Вся логика доставки живёт в одном изоморфном модуле** `src/lib/lead.js`, который бандлят оба
-приёмника — и серверный роут сайта, и воркер. Копий нет, поэтому формат сообщения, набор полей и
-нормализация телефона совпадают, каким бы маршрутом заявка ни пришла.
+приёмника. Копий нет, поэтому формат сообщения, набор полей и нормализация телефона совпадают,
+каким бы маршрутом заявка ни пришла.
 
 Цена решения: модуль обязан оставаться изоморфным — никаких `fs`, `path`, `node:*`, серверных
 импортов фреймворка и алиасов сборщика (`@/…`, esbuild в wrangler их не резолвит). Только
 Web API: `fetch`, `URL`, `AbortSignal`, `JSON`.
 
-⚠️ **Двойной деплой.** Правка общего модуля требует ДВУХ выкаток: деплой сайта И ручной
+⚠️ **Двойной деплой.** Правка общего модуля требует ДВУХ выкаток: деплоя сайта И ручного
 `wrangler deploy` из папки воркера. Воркер не подхватывается CI сайта. Забыл вторую — приёмники
-молча разъехались.
+молча разъехались. Пока воркер не развёрнут, грабля спит.
 
 ---
 
 ## 3. Что отличается от mate
 
-Всё, чего нет в таблице, переносится без изменений.
+Всё, чего нет в таблице, перенесено без изменений.
 
-| Что | Где | Действие |
+### Решения, принятые заказчиком
+
+| Что | Решение |
+|---|---|
+| Бот Telegram | **тот же, что у mate.** Не консьерж `@taotransit_bot` — значит, грабля с его вебхуком (§ 6) отпала, а токен не надо ни у кого просить |
+| Беседа Telegram | **новая.** Заявки TAO и mate не смешиваются |
+| Аккаунт amoCRM | **тот же** — `mategrouptrade`, та же приватная интеграция, тот же долгоживущий токен |
+| Воронка amoCRM | **новая** — `AMO_PIPELINE_ID` |
+| Хостинг | **Vercel** (`CLAUDE.md` § Hosting). Отсюда — адаптер и опциональность воркера (§ 11) |
+
+### Правки в коде
+
+| Что | Где | Что сделано |
 |---|---|---|
-| `TG_BOT_TOKEN` | секрет нового воркера | **решение принято, токена нет.** Берём бота, который уже стоит на сайте, — `@taotransit_bot`. Токен запрашивается у заказчика через BotFather. См. предупреждение в § 6 |
-| `CHAT_ID` | секрет нового воркера | **новое** — id отдельной беседы, НЕ той, в которой боту пишут клиенты |
-| `AMO_PIPELINE_ID` | `.env` сервера | **новое** — id новой воронки. Аккаунт тот же, `mategrouptrade` |
-| `AMO_SUBDOMAIN`, `AMO_LONG_TOKEN` | `.env` сервера | без изменений (аккаунт тот же, токен живёт до 5 лет) |
-| `AMO_SOURCE_NAME`, `AMO_SOURCE_UID`, `AMO_FORM_ID` | `.env` сервера | **новое** — задать явно, иначе заявки TAO неотличимы от заявок mate в одном аккаунте |
-| `AMO_ANSWER_FIELD` | `.env` сервера | решить: переиспользовать `FORM_ANSWER` или завести своё поле. Без переменной ответ живёт только в названии сделки и в тексте Telegram |
-| `ALLOWED_ORIGINS` | `src/lib/lead.js` | **правка** — `https://taotransit.com`, `http://taotransit.com`, адрес превью и `http://localhost:4321` (порт Astro dev) |
-| `name`, `namespace_id` | `wrangler.jsonc` | **правка** — `taotransit-lead-relay` и свой `namespace_id`, иначе перезапишется воркер mate |
-| `PUBLIC_LEAD_RELAY_URL` | `.env` сборки | **новое** — URL нового воркера, нужен ДО сборки |
-| счётчик Метрики и цель | `src/scripts/lead.ts` | **правка** — у mate это `ym(98008761, 'reachGoal', 'sendForm')`. У TAO своего счётчика пока нет (см. `CLAUDE.md` § Analytics), поэтому вызова в коде нет — место помечено комментарием |
-| логика доставки, формат TG, payload amo | `src/lib/lead.js` | копируется как есть |
+| `ALLOWED_ORIGINS` | `src/lib/lead.js` | домены taotransit (с `www` и без), `localhost:4321`, `127.0.0.1:4321` |
+| `corsHeadersFor(origin, extra)` | `src/lib/lead.js` | **новый второй аргумент.** Добавочные origin-ы поверх списка: сервер разрешает сам себя (иначе каждый превью-деплой Vercel отвечал бы форме 403), оба приёмника читают `LEAD_ALLOWED_ORIGINS` |
+| `message_thread_id` | `src/lib/lead.js` | **добавлено.** Беседа с темами (форум) без него получает сообщения в General. Пусто → ключа в теле нет |
+| дефолты | `src/lib/lead.js` | `lang` → `ru`, `site` → `taotransit.com`, `AMO_SOURCE_*` / `AMO_FORM_ID` → taotransit |
+| `security.checkOrigin` | `astro.config.mjs` | **выключено.** Почему — § 9 |
+| адаптер | `astro.config.mjs` | `@astrojs/vercel`; `prerender = false` только у роута заявки |
+| `outputDirectory` | `vercel.json` | **снято** — с адаптером сборка уезжает в `.vercel/output` |
+| `name`, `namespace_id` | `wrangler.jsonc` | `taotransit-lead-relay`, namespace `2001` (у mate занят `1001`) |
+| счётчик Метрики и цель | `src/scripts/analytics.ts` | у mate `ym(98008761, …)` прямо в форме; у нас счётчик TAO `112274964` вынесен в отдельный модуль за согласие, а форма зовёт `trackLead()` — и только после успешной доставки |
+| диагностика | `scripts/tg-chat.mjs` | **новый скрипт**, у mate его не было. Появился, потому что `CHAT_ID` был блокером |
+| `pipelines` | `scripts/amo-fields.mjs` | **новая команда**: печатает воронки и включено ли в них «Неразобранное» |
 
 **Почему нужен отдельный воркер, а не тот же.** У воркера mate `CHAT_ID` лежит в секретах одним
 значением — он физически не умеет писать в две беседы. Развилку по `Origin` внутри одного воркера
@@ -129,7 +231,7 @@ Web API: `fetch`, `URL`, `AbortSignal`, `JSON`.
 | `formName` | string | Человеческое имя формы → `metadata.form_name` |
 | `formPage` | string | `window.location.href`. Из хоста выводится «с какого сайта заявка», в amo уходит **без query** |
 | `referer` | string | `document.referrer` → поле `REFERRER` в amo |
-| `channels` | string[] | `["telegram"]` / `["amo"]`. Пересекается с тем, что приёмнику разрешено |
+| `channels` | string[] | `["telegram"]` / `["amo"]` / оба. Пересекается с тем, что приёмнику разрешено |
 | `via` | string | Только `"fallback"` при доборе; остальное приёмник проставляет сам |
 | метки | string | 11 ключей из `TRACKING_KEYS`, плоскими полями в корне тела |
 
@@ -139,8 +241,9 @@ Web API: `fetch`, `URL`, `AbortSignal`, `JSON`.
 как `retryable`. Это единственная защита от дублей.
 
 ```
-200  {"ok":true,  "retryable":false, "telegram":"ok",    "amo":"off", "delivered":1}
-502  {"ok":false, "retryable":true,  "telegram":"error", "amo":"off", "delivered":0}
+200  {"ok":true,  "retryable":false, "telegram":"ok",      "amo":"off", "delivered":1}
+503  {"ok":false, "retryable":false, "error":"not_configured", …}   — только серверный роут, § 1
+502  {"ok":false, "retryable":true,  "telegram":"error",   "amo":"off", "delivered":0}
 429  {"ok":false, "retryable":false, "error":"rate_limited"}
 400  {"ok":false, "retryable":false, "error":"bad_request"}
 403  Forbidden          — origin не в allowlist
@@ -183,6 +286,13 @@ export const TRACKING_KEYS = [
 - `AMO_UTM_FIELD_IDS` (JSON `{"utm_source":123,…}`) — аварийное переопределение для аккаунта, где
   метки лежат в самодельных полях: задан → `field_id` побеждает `field_code` поштучно.
 
+**Проверено на живой сборке.** Страница открыта с
+`?utm_source=…&utm_medium=…&utm_campaign=…&utm_content=…&utm_term=…&utm_referrer=…&gclid=…&yclid=…&fbclid=…&roistat=…`
+плюс cookie `_ym_uid`; форма отправлена в браузере. В оба запроса (`{channels:["telegram"]}` и
+`{channels:["amo"]}`) ушли **все 11 меток непустыми**, `requestId` у обоих один. Дальше
+`buildTelegramText` даёт по строке на метку, `buildAmoUnsortedPayload` — 11 полей меток
+плюс `REFERRER` и (если задан `AMO_ANSWER_FIELD`) поле ответа.
+
 **Дублирование списка.** `TRACKING_KEYS` объявлен и в `src/lib/lead.js` (сервер и воркер), и в
 `src/scripts/lead.ts` (клиент) — импортировать серверный модуль в клиентский бандл нельзя.
 Списки обязаны совпадать; при правке править оба.
@@ -214,50 +324,57 @@ _ym_uid: 1712...
 Диагностическая строка `⚠ доставлено через fallback · 3f9c1a2b` дописывается **только** когда
 маршрут нештатный. Штатные — `worker` (через Cloudflare) и `origin` (воркер не настроен, сервер
 везёт оба канала). Короткий `requestId` позволяет отличить технический дубль от человека,
-отправившего форму дважды.
+отправившего форму дважды. Сообщения из `scripts/tg-chat.mjs test` помечены `через script` —
+это норма для скрипта и признак беды, если пришло из формы.
 
-### ⚠️ Про бота `@taotransit_bot`
+### Про бота
 
-Это **живой консьерж-бот заказчика**, а не служебный. Отсюда два правила:
+Бот берётся **тот же, что у matestrade.com** — заказчик так решил. Практические следствия:
 
-1. **Никогда не вызывать `setWebhook` / `deleteWebhook` на этом токене.** Бот работает через
-   вебхук; его подмена или снятие молча ломает клиентский поток. Исходящий `sendMessage`
-   с вебхуком сосуществует — конфликта нет, отправлять безопасно.
-2. **Отдельная беседа.** Заявки идут в новую группу, не в ту, где боту пишут клиенты.
+1. Токен уже есть у заказчика, просить у BotFather ничего не надо.
+2. `@taotransit_bot` (живой консьерж) **не трогаем вовсе** — а значит, снимается главная грабля
+   прошлой редакции этого документа: не надо бояться сломать чужой вебхук.
+3. Беседа под заявки — **новая**. Заявки TAO не должны падать туда же, куда падают заявки mate:
+   разбирать их будут разные люди.
 
-Если заказчик не готов отдать токен консьерж-бота — запасной вариант — завести отдельного бота
-у BotFather под заявки. Тогда пункт 1 отпадает, а `CHAT_ID` всё равно новый.
+⚠️ Правило на любом живом боте всё равно остаётся: **никогда не вызывать `setWebhook` /
+`deleteWebhook`**. Исходящий `sendMessage` с вебхуком сосуществует — отправлять безопасно.
+`scripts/tg-chat.mjs` этих методов не умеет намеренно.
 
 ### Как получить id новой беседы
 
-1. Добавить бота в беседу и дать право писать.
-2. Написать в беседе любое сообщение.
-3. `curl "https://api.telegram.org/bot<TOKEN>/getUpdates"` → взять `result[].message.chat.id`.
+```bash
+node scripts/tg-chat.mjs whoami   # кто это и стоит ли вебхук — ЗАПУСКАТЬ ПЕРВЫМ
+node scripts/tg-chat.mjs chats    # беседы и их chat_id
+node scripts/tg-chat.mjs test     # отправить в CHAT_ID сообщение формата заявки
+```
+
+Перед этим: добавить бота в беседу, дать право писать, написать в ней любое сообщение.
 
 ⚠️ `getUpdates` **нельзя вызывать на боте с активным вебхуком** — Telegram вернёт 409 и, что хуже,
-может перехватить апдейт, предназначенный вебхуку. Для `@taotransit_bot` id беседы берётся иначе:
-у заказчика из его бекенда, либо временно через отдельного бота, добавленного в ту же группу.
+может перехватить апдейт, предназначенный вебхуку. Поэтому `chats` сначала спрашивает
+`getWebhookInfo` и **отказывается работать**, если вебхук стоит. Тогда id беседы берётся иначе:
+у владельца бота из его бекенда, либо временно через отдельного бота, добавленного в ту же группу.
 
 У супергрупп id отрицательный и начинается с `-100` — минус обязателен. Если беседа с включёнными
-темами (форум) и писать нужно в конкретную тему, в тело `sendMessage` добавляется
-`message_thread_id` — в текущем коде этого нет, добавляется одной строкой в `sendToTelegram()`.
+темами (форум), `chats` напечатает и `CHAT_THREAD_ID`; без него сообщения уйдут в General.
 
 ### Переменные воркера
 
 | Имя | Где | Значение |
 |---|---|---|
-| `TG_BOT_TOKEN` | секрет CF | `@taotransit_bot` (или отдельный бот, см. выше) |
+| `TG_BOT_TOKEN` | секрет CF | тот же бот, что у mate |
 | `CHAT_ID` | секрет CF | новая беседа |
+| `CHAT_THREAD_ID` | секрет CF | необязательно: тема в беседе-форуме |
 | `LEAD_CHANNELS` | `wrangler.jsonc` | `"telegram"` — потолок разрешённого |
 | `OUTBOUND_TIMEOUT_MS` | `wrangler.jsonc` | `"3000"` — клиент ждёт воркер 4 с, доставка дольше никому не отдастся |
+| `LEAD_ALLOWED_ORIGINS` | `wrangler.jsonc` | необязательно: добавочные origin-ы через запятую |
 | `LEAD_LIMITER` | биндинг `ratelimits` | 5 запросов с IP в минуту. `period` принимает **только 10 или 60** |
 
-Первый деплой:
+Первый деплой — `workers/lead-relay/README.md`. Коротко:
 
 ```bash
-cd workers/lead-relay
-npm install
-npx wrangler login
+cd workers/lead-relay && npm install && npx wrangler login
 npx wrangler secret put TG_BOT_TOKEN
 npx wrangler secret put CHAT_ID
 npm run deploy        # напечатает https://<name>.<account>.workers.dev
@@ -267,9 +384,8 @@ npm run deploy        # напечатает https://<name>.<account>.workers.de
 `SSL handshake failure` — Cloudflare ещё выпускает сертификат. DNS резолвится и TCP встаёт, так что
 снаружи это неотличимо от блокировки по SNI. Не диагностировать, просто подождать и повторить.
 
-Rate limit **ограничивает только форму**: прямой POST на серверный эндпоинт его не знает. Именно
+Rate limit **ограничивает только форму**: прямой POST на серверный роут его не знает. Именно
 поэтому 429 несёт `retryable: false` — иначе форма обходила бы антиспам одним лишним запросом.
-Если лимит на эндпоинте понадобится, его место в nginx (`limit_req`), не в коде.
 
 ---
 
@@ -331,626 +447,122 @@ Rate limit **ограничивает только форму**: прямой PO
 
 ⚠️ **Новая воронка: две проверки перед боем.**
 1. В настройках воронки должно быть **включено «Неразобранное»** — иначе заявка не создастся.
+   `node scripts/amo-fields.mjs pipelines` печатает это по каждой воронке отдельной колонкой.
 2. Поле под ответ формы (`FORM_ANSWER` и подобные) — **не системное**. Если в `AMO_ANSWER_FIELD`
    указать код несуществующего поля, amo вернёт 400 и потеряет **всю** заявку. Поэтому переменная
-   и сделана необязательной: без неё ответ выживает в названии сделки и в Telegram.
+   и сделана необязательной, а в `.env.example` она **закомментирована**: без неё ответ выживает
+   в названии сделки и в Telegram. `node scripts/amo-fields.mjs list` печатает отдельной строкой,
+   есть ли в аккаунте поле с заданным кодом.
 
-Id новой воронки: `GET /api/v4/leads/pipelines` с тем же токеном, или из URL воронки в интерфейсе amo.
-
-Диагностический скрипт (переносится как есть, читает `.env` из корня):
+Диагностика (читает `.env` из корня):
 
 ```
-node scripts/amo-fields.mjs list          # поля аккаунта: id / code / type
+node scripts/amo-fields.mjs pipelines     # воронки: id, название, «Неразобранное» вкл/выкл
+node scripts/amo-fields.mjs list          # поля сделок + проверка AMO_ANSWER_FIELD
+node scripts/amo-fields.mjs list contacts # поля контактов
 node scripts/amo-fields.mjs ensure-utm    # найти/создать utm-поля → строка AMO_UTM_FIELD_IDS
 node scripts/amo-fields.mjs test-lead     # отправить тестовую заявку в «Неразобранное»
 ```
 
 ---
 
-## 8. Исходники, копируемые как есть
+## 8. Общий модуль `src/lib/lead.js`
 
-Три файла из репозитория mate. В новом проекте правятся только `ALLOWED_ORIGINS`
-в первом и `name` в третьем.
+Раньше в этом разделе лежали исходники целиком — репозиторий `mate` был единственным местом, где
+они существовали. Теперь файлы здесь, и держать их вторую копию в markdown вредно: правка кода без
+правки документа сделала бы документ уверенно врущим. Читать код — в самих файлах.
 
-### 8.1. `src/lib/lead.js` — общий модуль доставки (изоморфный)
+Что экспортирует модуль:
 
-```js
-/**
- * Единая логика доставки заявки с сайта в Telegram и amoCRM.
- *
- * ВАЖНО: модуль изоморфный — он бандлится и в серверный роут, и в
- * Cloudflare Worker (workers/lead-relay). Поэтому здесь нельзя:
- *   - импортировать 'server-only', 'fs', 'path' и прочие Node-API;
- *   - использовать алиасы сборщика (wrangler/esbuild их не резолвит).
- * Только стандартные Web API: fetch, AbortSignal, URL, JSON.
- */
+| Экспорт | Зачем |
+|---|---|
+| `ALLOWED_ORIGINS`, `CHANNELS`, `TRACKING_KEYS` | три списка, из которых выведено всё остальное |
+| `corsHeadersFor(origin, extra)` | единственная дверь: нет заголовка `Origin` или он чужой → `null` → 403 |
+| `normalizeLead(raw, ctx)` | сырое тело → предсказуемая форма: телефон в цифры, метки в `tracking`, `via`/`ip` от приёмника |
+| `buildTelegramText(lead)` | текст сообщения, включая диагностическую строку нештатного маршрута |
+| `buildAmoUnsortedPayload(lead, cfg)` | тело `POST /leads/unsorted/forms` |
+| `readConfig(env)` | плоский объект переменных → конфиг. Один набор имён для `process.env` и для env воркера |
+| `resolveChannels(requested, allowed)` | чего просит клиент ∩ что приёмнику разрешено |
+| `deliverLead(lead, cfg, channels)` | шлёт в каналы независимо, никогда не бросает, возвращает статусы |
 
-/** Origin-ы, которым разрешено слать заявку (CORS + защита от чужих сайтов). */
-export const ALLOWED_ORIGINS = [
-  'https://taotransit.com',
-  'http://taotransit.com',
-  'http://localhost:4321',
-]
+Два инварианта, которые легко нарушить незаметно:
 
-/** Все каналы доставки. Кто из них работает у конкретного приёмника — решает вызывающий. */
-export const CHANNELS = ['telegram', 'amo']
-
-/**
- * Канонический список рекламных меток. Отсюда выводится и чтение из URL на
- * клиенте, и строки в Telegram, и поля сделки в amoCRM (по `field_code` =
- * КЛЮЧ В ВЕРХНЕМ РЕГИСТРЕ — у amoCRM это готовые поля типа tracking_data,
- * они есть в каждом аккаунте: UTM_SOURCE, GCLID, YCLID, FBCLID, _YM_UID, …).
- *
- * Добавляя ключ сюда, убедись, что поле с таким кодом в amo существует:
- * `node scripts/amo-fields.mjs list`. Неизвестный код заявку не роняет
- * (amo игнорирует), но и не сохранит значение.
- */
-export const TRACKING_KEYS = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_content',
-  'utm_term',
-  'utm_referrer',
-  // клики из рекламных систем — приходят в URL так же, как utm
-  'gclid',
-  'yclid',
-  'fbclid',
-  'roistat',
-  // не URL-параметр: клиент берёт его из cookie Яндекс.Метрики,
-  // чтобы заявку можно было сшить с визитом
-  '_ym_uid',
-]
-
-/** Таймаут одного исходящего запроса, если не задан OUTBOUND_TIMEOUT_MS. */
-const DEFAULT_OUTBOUND_TIMEOUT_MS = 8000
-
-function str(value) {
-  return value == null ? '' : String(value).trim()
-}
-
-function hostOf(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return ''
-  }
-}
-
-/** Страница без query-строки — метки в amo и так лежат отдельными полями (TRACKING_KEYS). */
-function withoutQuery(url) {
-  try {
-    const parsed = new URL(url)
-    return `${parsed.origin}${parsed.pathname}`
-  } catch {
-    return url
-  }
-}
-
-/** CORS-заголовки для разрешённого origin, иначе null. Общее для обоих приёмников. */
-export function corsHeadersFor(origin) {
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return null
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Credentials': 'true',
-    Vary: 'Origin',
-  }
-}
-
-/** Приводит сырое тело запроса формы к предсказуемой форме. */
-export function normalizeLead(raw, ctx = {}) {
-  const body = raw && typeof raw === 'object' ? raw : {}
-  const digits = str(body.phoneNumber).replace(/[^\d]/g, '')
-  const formPage = str(body.formPage)
-
-  const tracking = {}
-  for (const key of TRACKING_KEYS) tracking[key] = str(body[key])
-
-  return {
-    requestId: str(body.requestId) || null,
-    name: str(body.name),
-    email: str(body.email),
-    phone: digits ? `+${digits}` : '',
-    companyType: str(body.companyType),
-    lang: str(body.lang) || 'ru',
-    /** С какого сайта пришла заявка: берём из URL страницы. */
-    site: hostOf(formPage) || 'taotransit.com',
-    formName: str(body.formName) || 'Форма на сайте',
-    formPage,
-    referer: str(body.referer),
-    tracking,
-    /** Кто доставил заявку — проставляет приёмник, идёт в текст TG. */
-    via: str(ctx.via) || 'unknown',
-    ip: str(ctx.ip),
-    sentAt: Math.floor(Date.now() / 1000),
-  }
-}
-
-/** Текст сообщения в Telegram. */
-export function buildTelegramText(lead) {
-  const lines = [
-    lead.site,
-    `Язык: ${lead.lang}`,
-    `Имя: ${lead.name}`,
-    `Email: ${lead.email}`,
-    `Номер: ${lead.phone}`,
-    `Ответ на вопрос: ${lead.companyType}`,
-  ]
-
-  const trackingLines = TRACKING_KEYS.filter((key) => lead.tracking[key]).map(
-    (key) => `${key}: ${lead.tracking[key]}`
-  )
-  if (trackingLines.length) lines.push('', ...trackingLines)
-
-  if (lead.formPage) lines.push('', `Страница: ${lead.formPage}`)
-  if (lead.referer) lines.push(`Реферер: ${lead.referer}`)
-
-  // Диагностическая строка — только когда маршрут нештатный, иначе она была бы
-  // шумом в каждом сообщении. Штатные маршруты: `worker` (через Cloudflare) и
-  // `origin` (воркер не настроен — тогда сервер везёт оба канала). Всё остальное —
-  // добор после сбоя воркера, диагностический скрипт или запрос не из формы;
-  // короткий requestId позволяет опознать дубль одной и той же заявки.
-  const isRoutine = lead.via === 'worker' || lead.via === 'origin'
-  if (!isRoutine) {
-    const shortId = lead.requestId ? ` · ${lead.requestId.slice(0, 8)}` : ''
-    lines.push(`⚠ доставлено через ${lead.via}${shortId}`)
-  }
-
-  return lines.join('\n')
-}
-
-async function sendToTelegram(lead, config, timeoutMs) {
-  const response = await fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: config.chatId,
-      text: buildTelegramText(lead),
-      disable_web_page_preview: true,
-    }),
-    signal: AbortSignal.timeout(timeoutMs),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Telegram ${response.status}: ${await response.text()}`)
-  }
-}
-
-/**
- * Тело запроса для POST /api/v4/leads/unsorted/forms.
- * @see https://www.amocrm.ru/developers/content/crm_platform/unsorted-api#unsorted-add-form
- */
-export function buildAmoUnsortedPayload(lead, config) {
-  const contactFields = []
-  if (lead.phone) {
-    contactFields.push({ field_code: 'PHONE', values: [{ value: lead.phone, enum_code: 'WORK' }] })
-  }
-  if (lead.email) {
-    contactFields.push({ field_code: 'EMAIL', values: [{ value: lead.email, enum_code: 'WORK' }] })
-  }
-
-  // Метки кладём по системному коду поля (UTM_SOURCE, GCLID, …): в amoCRM это
-  // готовые поля типа tracking_data, они есть в аккаунте изначально и код у них
-  // одинаковый везде — маппинг id не нужен (проверено на живом аккаунте 2026-08-11).
-  // AMO_UTM_FIELD_IDS остаётся аварийным переопределением, если в конкретном
-  // аккаунте метки лежат в самодельных полях с другими кодами.
-  const leadFields = []
-  const utmFieldIds = config.utmFieldIds || {}
-  for (const key of TRACKING_KEYS) {
-    if (!lead.tracking[key]) continue
-    const fieldId = Number(utmFieldIds[key])
-    const target = Number.isInteger(fieldId)
-      ? { field_id: fieldId }
-      : { field_code: key.toUpperCase() }
-    leadFields.push({ ...target, values: [{ value: lead.tracking[key] }] })
-  }
-
-  // Источник перехода — у amoCRM для него тоже есть штатное поле.
-  if (lead.referer) {
-    leadFields.push({ field_code: 'REFERRER', values: [{ value: lead.referer }] })
-  }
-
-  // Ответ на вопрос формы. Поле НЕ системное: его код/id задаётся через
-  // AMO_ANSWER_FIELD, и без этой переменной в поле мы не пишем — иначе аккаунт
-  // без такого поля ловил бы 400 и терял заявку целиком. Сам ответ при этом
-  // не пропадает: он всегда идёт в название сделки (ниже) и в текст Telegram.
-  if (lead.companyType && config.answerField) {
-    const fieldId = Number(config.answerField)
-    const target = Number.isInteger(fieldId)
-      ? { field_id: fieldId }
-      : { field_code: String(config.answerField).toUpperCase() }
-    leadFields.push({ ...target, values: [{ value: lead.companyType }] })
-  }
-
-  const baseName = config.leadName || `Заявка с сайта ${lead.site}`
-  const leadEntity = {
-    name: lead.companyType ? `${baseName} — ${lead.companyType}` : baseName,
-  }
-  if (leadFields.length) leadEntity.custom_fields_values = leadFields
-  if (lead.lang) leadEntity._embedded = { tags: [{ name: lead.lang }] }
-
-  const complaint = {
-    source_name: config.sourceName,
-    source_uid: config.sourceUid,
-    created_at: lead.sentAt,
-    _embedded: {
-      leads: [leadEntity],
-      contacts: [
-        {
-          name: lead.name || 'Без имени',
-          ...(contactFields.length ? { custom_fields_values: contactFields } : {}),
-        },
-      ],
-    },
-    metadata: {
-      ip: lead.ip || '0.0.0.0',
-      form_id: config.formId,
-      form_name: lead.formName,
-      form_page: (lead.formPage && withoutQuery(lead.formPage)) || `https://${lead.site}`,
-      form_sent_at: lead.sentAt,
-      ...(lead.referer ? { referer: lead.referer } : {}),
-    },
-  }
-
-  if (lead.requestId) complaint.request_id = lead.requestId
-  if (config.pipelineId) complaint.pipeline_id = config.pipelineId
-
-  return [complaint]
-}
-
-async function sendToAmo(lead, config, timeoutMs) {
-  const url = `https://${config.subdomain}.${config.host}/api/v4/leads/unsorted/forms`
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.token}`,
-    },
-    body: JSON.stringify(buildAmoUnsortedPayload(lead, config)),
-    signal: AbortSignal.timeout(timeoutMs),
-  })
-
-  if (!response.ok) {
-    throw new Error(`amoCRM ${response.status}: ${await response.text()}`)
-  }
-}
-
-function intOrNull(value) {
-  const parsed = Number(value)
-  return value && Number.isInteger(parsed) ? parsed : null
-}
-
-/**
- * Читает конфиг из «плоского» объекта переменных окружения. Один и тот же набор
- * имён работает и для process.env (VPS), и для env воркера (CF secrets).
- */
-export function readConfig(env = {}) {
-  let utmFieldIds = null
-  if (env.AMO_UTM_FIELD_IDS) {
-    try {
-      utmFieldIds = JSON.parse(env.AMO_UTM_FIELD_IDS)
-    } catch (error) {
-      console.error('AMO_UTM_FIELD_IDS is not valid JSON, UTM will be skipped:', error)
-    }
-  }
-
-  // Какие каналы этому приёмнику разрешены вообще. У воркера — только telegram
-  // (LEAD_CHANNELS в wrangler.jsonc): amoCRM ходит исключительно с сервера.
-  const allowedChannels = String(env.LEAD_CHANNELS || '')
-    .split(',')
-    .map((name) => name.trim())
-    .filter((name) => CHANNELS.includes(name))
-
-  return {
-    channels: allowedChannels.length ? allowedChannels : CHANNELS,
-    // Воркеру бюджет режут через env: клиент ждёт его меньше, чем серверный фолбэк,
-    // и доставка дольше клиентского таймаута — это заведомо выброшенная работа.
-    timeoutMs: intOrNull(env.OUTBOUND_TIMEOUT_MS) || DEFAULT_OUTBOUND_TIMEOUT_MS,
-    telegram: {
-      botToken: env.TG_BOT_TOKEN || '',
-      chatId: env.CHAT_ID || '',
-    },
-    amo: {
-      subdomain: env.AMO_SUBDOMAIN || '',
-      token: env.AMO_LONG_TOKEN || '',
-      host: env.AMO_HOST || 'amocrm.ru',
-      pipelineId: intOrNull(env.AMO_PIPELINE_ID),
-      sourceName: env.AMO_SOURCE_NAME || 'Сайт taotransit.com',
-      sourceUid: env.AMO_SOURCE_UID || 'taotransit-website-form',
-      formId: env.AMO_FORM_ID || 'taotransit-contact-form',
-      leadName: env.AMO_LEAD_NAME || '',
-      // Код или id поля под ответ на вопрос формы. Пусто → в поле не пишем.
-      answerField: env.AMO_ANSWER_FIELD || '',
-      utmFieldIds,
-    },
-  }
-}
-
-/** Одна попытка доставки: никогда не бросает, возвращает статус канала. */
-async function attempt(name, isConfigured, send) {
-  if (!isConfigured) {
-    console.error(`${name} is not configured, skipping`)
-    return 'skipped'
-  }
-  try {
-    await send()
-    return 'ok'
-  } catch (error) {
-    console.error(`Lead delivery to ${name} failed:`, error)
-    return 'error'
-  }
-}
-
-/**
- * Чего просит клиент ∩ что этому приёмнику вообще разрешено (LEAD_CHANNELS).
- * Мусор, пустое пересечение и отсутствие поля дают полный набор приёмника —
- * заявка не теряется из-за кривого запроса.
- */
-export function resolveChannels(requested, allowed) {
-  if (!Array.isArray(requested)) return allowed
-  const wanted = requested.filter((name) => allowed.includes(name))
-  return wanted.length ? wanted : allowed
-}
-
-/**
- * Шлёт заявку в запрошенные каналы независимо друг от друга.
- * Никогда не бросает: возвращает статусы, решение об HTTP-коде — за вызывающим.
- *
- * @param {string[]} channels какие каналы задействовать — см. CHANNELS
- * @returns {Promise<{telegram: 'ok'|'error'|'skipped'|'off', amo: ..., delivered: number}>}
- */
-export async function deliverLead(lead, config, channels = CHANNELS) {
-  const { telegram: tg, amo } = config
-  const wanted = (name) => channels.includes(name)
-
-  const [telegram, amoStatus] = await Promise.all([
-    wanted('telegram')
-      ? attempt('Telegram', tg.botToken && tg.chatId, () =>
-          sendToTelegram(lead, tg, config.timeoutMs)
-        )
-      : 'off',
-    wanted('amo')
-      ? attempt('amoCRM', amo.subdomain && amo.token, () => sendToAmo(lead, amo, config.timeoutMs))
-      : 'off',
-  ])
-
-  return {
-    telegram,
-    amo: amoStatus,
-    delivered: [telegram, amoStatus].filter((status) => status === 'ok').length,
-  }
-}
-```
-
-### 8.2. `workers/lead-relay/src/index.js` — Cloudflare Worker
-
-```js
-/**
- * Cloudflare Worker — прослойка между формой сайта и Telegram.
- *
- * Каналы разведены по приёмникам:
- *   - Telegram → этот воркер (обход возможной блокировки Telegram из РФ);
- *   - amoCRM   → только напрямую с сервера (российский сервис, российский сервер;
- *                хоп через Cloudflare добавил бы латентность и точку отказа).
- * Ограничение зашито в `LEAD_CHANNELS` (wrangler.jsonc), а не в договорённость:
- * даже если клиент попросит здесь amo, `resolveChannels` это отсечёт.
- *
- * Если воркер вернул `retryable: true` или не ответил, форма добирает Telegram
- * через серверный эндпоинт сайта. Чтобы добор не породил дубль,
- * `retryable: true` ставится ТОЛЬКО когда не доставлено ничего. Решение принимает
- * воркер — клиент кодов ответа не разбирает.
- *
- * Вся бизнес-логика лежит в общем модуле src/lib/lead.js — здесь только
- * транспорт, CORS и rate limit.
- */
-import {
-  corsHeadersFor,
-  deliverLead,
-  normalizeLead,
-  readConfig,
-  resolveChannels,
-} from '../../../src/lib/lead'
-
-function json(body, status, extraHeaders = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...extraHeaders },
-  })
-}
-
-export default {
-  async fetch(request, env) {
-    const origin = request.headers.get('Origin')
-    const cors = corsHeadersFor(origin)
-
-    if (request.method === 'GET') {
-      // Health-check без единого секрета в ответе.
-      return json({ ok: true, service: 'taotransit-lead-relay' }, 200)
-    }
-
-    if (request.method === 'OPTIONS') {
-      if (!cors) return new Response('Forbidden', { status: 403 })
-      return new Response(null, {
-        status: 204,
-        headers: {
-          ...cors,
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers':
-            request.headers.get('Access-Control-Request-Headers') || 'Content-Type',
-          'Access-Control-Max-Age': '86400',
-        },
-      })
-    }
-
-    if (request.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'POST, OPTIONS' } })
-    }
-
-    // Воркер публичен, поэтому единственная защита от чужих сайтов — Origin
-    // (браузер его не даёт подделать) плюс лимит по IP ниже.
-    if (!cors) return new Response('Forbidden', { status: 403 })
-
-    const ip = request.headers.get('CF-Connecting-IP') || ''
-
-    if (env.LEAD_LIMITER) {
-      const { success } = await env.LEAD_LIMITER.limit({ key: ip || origin })
-      // Повторять на сервере нельзя: у него своего лимита нет, и фолбэк обходил бы
-      // антиспам одним лишним запросом.
-      if (!success) return json({ ok: false, error: 'rate_limited', retryable: false }, 429, cors)
-    }
-
-    let lead
-    let requestedChannels
-    try {
-      const body = await request.json()
-      requestedChannels = body?.channels
-      lead = normalizeLead(body, { via: 'worker', ip })
-    } catch (error) {
-      // Тело не разобрать — сервер разберёт его ровно так же, повтор бессмыслен.
-      console.error('Bad request body:', error)
-      return json({ ok: false, error: 'bad_request', retryable: false }, 400, cors)
-    }
-
-    const config = readConfig(env)
-    const result = await deliverLead(lead, config, resolveChannels(requestedChannels, config.channels))
-
-    // Ничего не доставлено — только здесь повтор безопасен и нужен.
-    if (result.delivered === 0) return json({ ok: false, retryable: true, ...result }, 502, cors)
-
-    return json({ ok: true, retryable: false, ...result }, 200, cors)
-  },
-}
-```
-
-### 8.3. `workers/lead-relay/wrangler.jsonc`
-
-```jsonc
-{
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "taotransit-lead-relay",
-  "main": "src/index.js",
-  "compatibility_date": "2026-08-10",
-  "workers_dev": true,
-  "observability": {
-    "enabled": true
-  },
-  "vars": {
-    // Воркеру разрешён ТОЛЬКО Telegram. amoCRM — российский сервис, и ходит в него
-    // исключительно сервер напрямую: хоп через Cloudflare дал бы лишнюю латентность
-    // и лишнюю точку отказа. Даже если клиент попросит здесь amo — будет отсечено.
-    "LEAD_CHANNELS": "telegram",
-    // Клиент ждёт воркер 4 с (RELAY_TIMEOUT_MS в src/scripts/lead.ts) — доставка
-    // дольше этого всё равно никому не отдастся, поэтому бюджет канала здесь
-    // короче дефолтных 8 с, которые остаются у сервера.
-    "OUTBOUND_TIMEOUT_MS": "3000"
-  },
-  // Антиспам: не более 5 заявок с одного IP в минуту. period может быть только 10 или 60.
-  "ratelimits": [
-    {
-      "name": "LEAD_LIMITER",
-      "namespace_id": "2001",
-      "simple": {
-        "limit": 5,
-        "period": 60
-      }
-    }
-  ]
-  // Секреты (НЕ хранить здесь, задаются через `wrangler secret put <NAME>`):
-  //   TG_BOT_TOKEN, CHAT_ID
-}
-```
+- **`deliverLead` не бросает никогда.** Решение об HTTP-коде принимает вызывающий, и именно там
+  живёт правило про `retryable` (§ 4). Если внутрь просочится `throw`, приёмник ответит 500,
+  а клиент прочтёт его как `retryable: true` и создаст дубль.
+- **Модуль изоморфен.** Первый же `import … from 'node:…'` ломает не сборку сайта, а `wrangler
+  deploy` — то есть проявится через недели, когда воркер понадобится обновить.
 
 ---
 
-## 9. Серверный эндпоинт под Astro — `src/pages/api/lead.ts`
+## 9. Серверный приёмник `src/pages/api/lead.ts`
 
-```ts
-import type { APIRoute } from 'astro'
-import {
-  corsHeadersFor, deliverLead, normalizeLead, readConfig, resolveChannels,
-} from '../../lib/lead.js'
+Один файл, три метода:
 
-// Эндпоинт обязан быть серверным даже при статическом сайте.
-export const prerender = false
+- `POST` — приём заявки. Контракт § 1: 200 почти всегда, 503 только на «не настроено вовсе».
+- `OPTIONS` — preflight. Форма его не вызывает (тело уходит как `text/plain`, § 12 п. 3),
+  но кросс-доменный вызов без него был бы невозможен.
+- `GET` — health-check: какие каналы разрешены и какие настроены. Без единого секрета в ответе.
+  Нужен, чтобы отличить «эндпоинт не задеплоен» от «эндпоинт молчит».
 
-function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
-  return request.headers.get('x-real-ip') || ''
-}
+### Три решения, принятые здесь
 
-export const OPTIONS: APIRoute = ({ request }) => {
-  const cors = corsHeadersFor(request.headers.get('origin'))
-  if (!cors) return new Response('Forbidden', { status: 403 })
+**Адаптер, но сайт остаётся статикой.** `@astrojs/vercel` подключён в `astro.config.mjs`, но
+`output` не тронут: по умолчанию он `'static'`, и серверным помечается только этот файл через
+`export const prerender = false`. Остальные страницы по-прежнему пререндерятся.
 
-  return new Response(null, {
-    status: 204,
-    headers: {
-      ...cors,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers':
-        request.headers.get('access-control-request-headers') || 'Content-Type',
-    },
-  })
-}
+⚠️ Побочный эффект: сборка уезжает из `dist/` в `.vercel/output/` (Build Output API). Поэтому из
+`vercel.json` снято `outputDirectory` — иначе Vercel искал бы статику там, где её больше нет.
+После первого деплоя стоит проверить `curl -I`, что три заголовка безопасности из `vercel.json`
+доехали.
 
-export const POST: APIRoute = async ({ request }) => {
-  const cors = corsHeadersFor(request.headers.get('origin'))
-  if (!cors) return new Response('Forbidden', { status: 403 })
+**`security.checkOrigin` выключён.** Встроенная проверка Astro включена по умолчанию и режет любой
+кросс-доменный POST с телом `text/plain` — то есть ровно тот запрос, который шлёт форма. Проблема
+не в строгости, а в том, что это **вторая дверь с другими правилами**: `ALLOWED_ORIGINS` общий
+у сервера и воркера, а встроенная проверка про него не знает, и приёмники начали бы отвечать
+по-разному на один и тот же запрос. Наша проверка при этом строже: встроенная сравнивает `Origin`
+с адресом запроса только когда заголовок есть, а `corsHeadersFor` без `Origin` отдаёт 403 всегда.
 
-  // Контракт: всегда 200 для разрешённого origin. Это единственный путь в amoCRM
-  // и последний рубеж для Telegram — показывать пользователю 5xx уже некуда.
-  try {
-    const body = await request.json()
-    const via = body?.via === 'fallback' ? 'fallback' : 'origin'
-    const lead = normalizeLead(body, { via, ip: clientIp(request) })
-    const config = readConfig(process.env)  // на Cloudflare: locals.runtime.env
-    await deliverLead(lead, config, resolveChannels(body?.channels, config.channels))
-  } catch (error) {
-    console.error('lead handler error:', error)
-  }
+**Сервер разрешает сам себя.** Запрос со своей же страницы по определению не с чужого сайта,
+поэтому `selfOrigin(request)` (из `x-forwarded-host`/`host`) добавляется к списку. Без этого каждый
+превью-деплой Vercel — а домен у него свой на каждую ветку — отвечал бы форме 403. Подделать это
+нельзя: сравнение идёт с заголовком `Origin`, который браузер проставляет сам.
 
-  return new Response('ok', { status: 200, headers: cors })
-}
-```
+### Замечания по среде
 
-Замечания по Astro:
-
-- Нужен адаптер (`@astrojs/node` в режиме `standalone`/`middleware` за nginx). Весь сайт в
-  `output: 'server'` переводить не нужно: остаётся статика, а серверным помечается только этот
-  эндпоинт через `export const prerender = false`.
-- `import.meta.env.SECRET` инлайнится на этапе сборки, поэтому серверные секреты читаем из
-  `process.env` (node-адаптер) — иначе смена значения потребует пересборки. На Cloudflare-адаптере
-  переменные приходят в `locals.runtime.env`, и сигнатуру надо поменять на
-  `async ({ request, locals })` + `readConfig(locals.runtime.env)`.
-- `OPTIONS` остаётся отдельным экспортом, не сливать с `POST`.
-- Появление адаптера ломает нынешнюю схему деплоя «положить `dist/` папкой» — статику начинает
-  отдавать node-процесс или nginx перед ним. Учесть при выборе хостинга (`CLAUDE.md` § Hosting).
+- Секреты читаются из `process.env`, а не из `import.meta.env`: второй инлайнится на сборке, и
+  смена значения в панели Vercel потребовала бы пересборки.
+- На Cloudflare-адаптере переменные приходят в `locals.runtime.env` — тогда сигнатуры меняются на
+  `({ request, locals })` + `readConfig(locals.runtime.env)`.
+- Функция весит ~22 МБ (в ней `sharp` ради эндпоинта `/_image`). Предел Vercel — 250 МБ, запас есть.
 
 ---
 
 ## 10. Переменные окружения
 
-`.env` в корне, в git не коммитится:
+**Шаблон со всеми комментариями — `.env.example` в корне.** Скопировать в `.env` для локальной
+работы; на Vercel те же имена задаются в Project Settings → Environment Variables.
+
+Минимум, при котором форма работает:
 
 ```
-# клиентские — инлайнятся в бандл на этапе сборки
-PUBLIC_LEAD_RELAY_URL=https://taotransit-lead-relay.<account>.workers.dev
-PUBLIC_LEAD_ORIGIN_URL=https://taotransit.com/api/lead
-
-# серверные
-TG_BOT_TOKEN=…            # @taotransit_bot; нужен, только если сервер тоже шлёт в TG (фолбэк)
-CHAT_ID=…                 # id новой беседы
+PUBLIC_LEAD_ORIGIN_URL=/api/lead
+TG_BOT_TOKEN=…            # тот же бот, что у mate
+CHAT_ID=…                 # НОВАЯ беседа
 AMO_SUBDOMAIN=mategrouptrade
 AMO_LONG_TOKEN=…          # тот же долгоживущий токен, что у mate
 AMO_PIPELINE_ID=…         # НОВАЯ воронка
-AMO_ANSWER_FIELD=FORM_ANSWER
 AMO_SOURCE_NAME=Сайт taotransit.com
 AMO_SOURCE_UID=taotransit-website-form
 AMO_FORM_ID=taotransit-contact-form
-# необязательные: AMO_HOST, AMO_LEAD_NAME, AMO_UTM_FIELD_IDS, LEAD_CHANNELS, OUTBOUND_TIMEOUT_MS
 ```
+
+Почему `PUBLIC_LEAD_ORIGIN_URL` — относительный путь: так один и тот же билд работает и на боевом
+домене, и на любом превью-деплое, у которого адрес свой.
+
+Необязательное: `PUBLIC_LEAD_RELAY_URL` (воркер, § 11), `CHAT_THREAD_ID` (беседа-форум),
+`AMO_ANSWER_FIELD` (⚠️ сначала проверить, что поле есть), `LEAD_ALLOWED_ORIGINS`, `AMO_HOST`,
+`AMO_LEAD_NAME`, `AMO_UTM_FIELD_IDS`, `LEAD_CHANNELS`, `OUTBOUND_TIMEOUT_MS`.
 
 `readConfig()` читает плоский объект переменных — один набор имён работает и для `process.env`,
 и для env воркера.
@@ -959,89 +571,118 @@ AMO_FORM_ID=taotransit-contact-form
 
 ---
 
-## 11. Развилка по хостингу
+## 11. Нужен ли воркер
 
-Схема с двумя приёмниками оправдана ровно одним обстоятельством: **сервер стоит в России**.
-Хостинг taotransit.com пока не выбран (`CLAUDE.md` § Hosting), поэтому выбор ещё влияет на код.
+Хостинг выбран — **Vercel**. Это меняет ответ по сравнению с mate.
+
+Воркер решал ровно одну задачу: сайт mate стоит на VPS в РФ, откуда Telegram может быть недоступен.
+Vercel до `api.telegram.org` доходит напрямую, поэтому **здесь воркер опционален**, и по умолчанию
+`.env.example` его не включает: `PUBLIC_LEAD_RELAY_URL` пуст → форма шлёт один запрос на
+`/api/lead`, сервер везёт оба канала.
+
+Развернуть имеет смысл, если:
+
+- нужен второй, независимый маршрут до Telegram (Vercel-функция упала, а заявка дошла);
+- нужен rate limit на форму — у серверного роута своего нет;
+- сайт переедет на VPS в РФ (`CLAUDE.md` § Hosting: запасной вариант — Timeweb). Тогда воркер
+  становится обязательным, и код к этому уже готов.
 
 | Где живёт сайт | Что делать |
 |---|---|
-| **VPS в РФ** (кандидат — тот же Timeweb, где живёт mate) | схема переносится один в один. Astro + `@astrojs/node` за nginx. Рекомендуется: заявки идут из России |
-| **Cloudflare Pages** | воркер как отдельный приёмник теряет смысл — эндпоинт сайта и есть воркер. Оставить один приёмник с `LEAD_CHANNELS="telegram,amo"`, убрать параллельные запросы на клиенте. Env — из `locals.runtime.env`. Риск: до amoCRM ходить из-за границы, плюс сам CF из РФ доступен нестабильно |
-| **Vercel / Netlify** | соответствующий адаптер, `process.env` работает. Схема с воркером осмысленна, только если Telegram с площадки недоступен. Из РФ обе площадки режутся — для превью-ссылки заказчику не годятся |
-| **Полностью статический сайт** (без адаптера) | серверного эндпоинта нет → оба канала уходят в воркер: `LEAD_CHANNELS="telegram,amo"`, секреты `AMO_*` кладутся в Cloudflare. Ценой становится хоп Cloudflare → amoCRM и один общий приёмник вместо двух. **Самый дешёвый путь, если не хочется трогать текущую схему деплоя статики** |
+| **Vercel** (сейчас) | адаптер `@astrojs/vercel`, `process.env`. Воркер опционален. Риск: amoCRM вызывается из-за границы — латентность, но сервис доступен |
+| **VPS в РФ** | `@astrojs/node` в режиме `standalone` за nginx, воркер обязателен. `ALLOWED_ORIGINS` и IP из `x-forwarded-for` уже готовы |
+| **Cloudflare Pages** | воркер как отдельный приёмник теряет смысл: роут сайта и есть воркер. Один приёмник с `LEAD_CHANNELS="telegram,amo"`, env — из `locals.runtime.env` |
+| **Полностью статический сайт** | серверного роута нет → оба канала уходят в воркер: `LEAD_CHANNELS="telegram,amo"`, секреты `AMO_*` в Cloudflare |
 
 ---
 
 ## 12. Грабли
 
-По каждой уже наступили в mate. Порядок — по цене ошибки.
+По каждой уже наступили. Порядок — по цене ошибки.
 
 1. **Дубли заявок.** Решение о повторе принимает приёмник (поле `retryable`), а не клиент по
    HTTP-коду. Начнёшь ретраить на 5xx самостоятельно — каждая частичная неудача даст двойное
    сообщение в Telegram.
-2. **`setWebhook` на `@taotransit_bot`.** Ломает живой консьерж-поток заказчика. См. § 6.
+2. **`setWebhook` на живом боте.** Ломает поток, который через вебхук ходит. `scripts/tg-chat.mjs`
+   этих методов не умеет намеренно; `getUpdates` он делает только убедившись, что вебхука нет.
 3. **`Content-Type` не задаётся намеренно.** Без него запрос остаётся CORS simple request и
    браузер не шлёт preflight — минус RTT и минус один способ сломаться. Обе стороны читают тело
    через `.json()`. Добавишь заголовок — появится `OPTIONS`, который обязан отвечать корректно.
-4. **`PUBLIC_*` инлайнится на сборке.** URL воркера должен лежать в `.env` ДО сборки. Положил
-   после — в бандле пусто, форма молча уходит в демо-режим.
-5. **403 на чужой origin.** Забыли добавить домен (или dev-порт 4321) в `ALLOWED_ORIGINS` — 403 и на
+4. **`security.checkOrigin` у Astro.** Включённый (по умолчанию) он режет кросс-доменный POST
+   с телом `text/plain` **до** нашего кода — то есть до `ALLOWED_ORIGINS`, и приёмники начинают
+   расходиться в поведении. Выключен осознанно, см. § 9. Вернёшь — сначала прочти этот абзац.
+5. **`outputDirectory` в `vercel.json` против адаптера.** С адаптером сборка лежит
+   в `.vercel/output`, а не в `dist`. Строку сняли; вернёшь — Vercel будет раздавать пустоту.
+6. **`PUBLIC_*` инлайнится на сборке.** Адрес приёмника должен быть в окружении ДО сборки.
+   Положил после — в бандле пусто, форма молча уходит в демо-режим.
+7. **403 на чужой origin.** Забыли добавить домен (или dev-порт 4321) в `ALLOWED_ORIGINS` — 403 и на
    воркере, и на сервере. Массив общий: правка требует и деплоя сайта, и `wrangler deploy`.
-6. **Эндпоинт всегда отвечает 200.** Ошибки уходят в `console.error`, наружу — никогда. Это
-   сознательно: пользователю показывать 5xx некуда. Значит, мониторинг — только логи, и тишина
-   в них не равна успеху.
-7. **Двойной деплой общего модуля.** Правка `lead.js` без `wrangler deploy` = приёмники разъехались.
-8. **400 от amo убивает заявку целиком.** Несуществующий код поля в `AMO_ANSWER_FIELD` — и
-   неразобранное не создастся.
-9. **Метрика может не загрузиться.** `ym(...)` обёрнут в `try/catch`: цель — не повод потерять заявку.
-10. **`period` лимитера.** В биндинге `ratelimits` допустимы только значения 10 и 60. Любое
+8. **Роут почти всегда отвечает 200.** Ошибки уходят в `console.error`, наружу — никогда, кроме
+   единственного случая § 1. Значит, мониторинг — только логи, и тишина в них не равна успеху.
+9. **Двойной деплой общего модуля.** Правка `lead.js` без `wrangler deploy` = приёмники разъехались.
+10. **400 от amo убивает заявку целиком.** Несуществующий код поля в `AMO_ANSWER_FIELD` — и
+    неразобранное не создастся. Проверять `node scripts/amo-fields.mjs list`.
+11. **Метрика может не загрузиться** — или не подключиться вовсе, если посетитель отказался
+    от аналитики. Поэтому цель живёт в `trackLead()` (`src/scripts/analytics.ts`): вызов
+    необязательный (`window.ym?.(…)`) и обёрнут в `try/catch`. Цель — не повод потерять заявку.
+12. **`period` лимитера.** В биндинге `ratelimits` допустимы только значения 10 и 60. Любое
     другое — ошибка деплоя воркера.
-11. **Заголовок IP.** За nginx настоящий адрес в `x-forwarded-for`, у воркера — в
+13. **Заголовок IP.** За nginx настоящий адрес в `x-forwarded-for`, у воркера — в
     `CF-Connecting-IP`. Перепутал — в amo уедет адрес прокси.
-12. **Два списка `TRACKING_KEYS`.** Клиентский и серверный обязаны совпадать (§ 5).
+14. **Два списка `TRACKING_KEYS`.** Клиентский и серверный обязаны совпадать (§ 5).
+15. **Беседа с темами.** Без `CHAT_THREAD_ID` сообщения падают в General, и их не замечают.
 
 ---
 
-## 13. Порядок внедрения
+## 13. Что осталось сделать
 
-Каждый шаг проверяется до того, как на него завязывается следующий.
+Код готов целиком. Осталось наполнить его значениями — по шагам, каждый проверяется до того,
+как на него завязывается следующий.
 
-1. Получить от заказчика: токен бота (`@taotransit_bot` или новый), доступ к amo (`mategrouptrade`),
-   решение по хостингу.
-2. Скопировать `src/lib/lead.js`, папку `workers/lead-relay/` и `scripts/amo-fields.mjs` из `mate`.
-   Поправить `ALLOWED_ORIGINS` и `name` воркера.
-3. Создать беседу под заявки, добавить бота, получить `CHAT_ID` (осторожно с `getUpdates` — § 6).
-4. Задеплоить воркер с двумя секретами, дождаться сертификата, проверить health-check и тестовую
-   заявку curl-ом.
-5. Получить id новой воронки, убедиться, что в ней включено «Неразобранное».
-6. Прогнать `node scripts/amo-fields.mjs list` и решить судьбу поля под ответ формы.
-7. Проверить amo вслепую: `node scripts/amo-fields.mjs test-lead` — заявка должна появиться
-   в нужной воронке.
-8. Заполнить `.env`, включая `PUBLIC_LEAD_RELAY_URL`, ДО первой сборки.
-9. Добавить `src/pages/api/lead.ts` и адаптер, собрать, задеплоить.
-10. Отправить форму с боевого домена с меткой в URL: `?utm_source=test&gclid=test`.
-11. Сверить три вещи: сообщение в беседе (без строки `⚠`), сделку в нужной воронке с заполненными
-    метками и тегом языка, цель в Метрике.
+1. **Telegram.** Создать беседу под заявки TAO, добавить туда бота mate, дать право писать.
+   `node scripts/tg-chat.mjs whoami` → `chats` → взять `CHAT_ID`.
+2. **amoCRM.** Создать воронку TAO, **включить в ней «Неразобранное»**.
+   `node scripts/amo-fields.mjs pipelines` → взять `AMO_PIPELINE_ID`.
+3. **Поле ответа.** `node scripts/amo-fields.mjs list` — решить судьбу `AMO_ANSWER_FIELD`
+   (переиспользовать `FORM_ANSWER` mate, завести своё или оставить пустым).
+4. **`.env`.** Скопировать `.env.example`, заполнить. Локально — файлом, на Vercel — в настройках
+   проекта. `PUBLIC_LEAD_ORIGIN_URL` обязан быть задан **до сборки**.
+5. **Проверки вслепую, до деплоя:**
+   `node scripts/tg-chat.mjs test` — сообщение в беседе;
+   `node scripts/amo-fields.mjs test-lead` — сделка в нужной воронке.
+6. **Деплой на Vercel.** Проверить `curl https://<домен>/api/lead` — health-check должен показать
+   `telegram: true, amo: true, pipeline: true`. И `curl -I https://<домен>/` — три заголовка
+   безопасности из `vercel.json` на месте.
+7. **Боевая отправка** с меткой в URL: `?utm_source=test&gclid=test`.
+8. **Сверить три вещи:** сообщение в беседе (без строки `⚠`), сделку в нужной воронке
+   с заполненными метками и тегом `ru`, отсутствие ошибок в логах функции.
+9. *(опционально)* Воркер — `workers/lead-relay/README.md`. После деплоя положить его URL
+   в `PUBLIC_LEAD_RELAY_URL` и пересобрать.
+10. **Завести цель `sendForm` в интерфейсе Метрики** (счётчик `112274964`). Код её уже
+    отправляет — `trackLead()` в `src/scripts/analytics.ts`, — но до создания цели вызов
+    ни во что не превращается. У GA4 своего шага нет: `generate_lead` — стандартное событие,
+    его достаточно отметить как конверсию.
+    ⚠️ Метка `_ym_uid` уходит пустой у всех, кто отказался от аналитики: cookie ставит
+    Метрика, а её при отказе нет. Так и задумано.
 
 ### Быстрые проверки
 
 ```bash
-# воркер жив
-curl https://<name>.<account>.workers.dev
+# состояние приёмника, без секретов в ответе
+curl https://taotransit.com/api/lead
 
-# тестовая заявка (Origin обязателен, иначе 403)
-curl -i -X POST https://<name>.<account>.workers.dev \
-  -H 'Origin: https://taotransit.com' \
-  -d '{"channels":["telegram"],"name":"Тест","email":"t@example.com","phoneNumber":"+70000000000","lang":"ru","formPage":"https://taotransit.com/"}'
-
-# живые логи воркера
-cd workers/lead-relay && npm run tail
-
-# серверный эндпоинт
+# тестовая заявка на сервер (Origin обязателен, иначе 403)
 curl -i -X POST https://taotransit.com/api/lead \
   -H 'Origin: https://taotransit.com' \
-  -d '{"channels":["amo"],"name":"Тест","email":"t@example.com","phoneNumber":"+70000000000","lang":"ru","formPage":"https://taotransit.com/"}'
+  -d '{"channels":["amo"],"name":"Тест","email":"t@example.com","phoneNumber":"+70000000000","lang":"ru","companyType":"Проверка","formPage":"https://taotransit.com/?utm_source=test"}'
+
+# то же локально
+npm run dev
+curl -i -X POST http://localhost:4321/api/lead -H 'Origin: http://localhost:4321' -d '{"channels":["amo"],"name":"Тест"}'
+
+# воркер, если развёрнут
+curl https://taotransit-lead-relay.<account>.workers.dev
+cd workers/lead-relay && npm run tail
 ```
 
 Ответ `{"ok":true,"telegram":"ok","amo":"off","delivered":1}` от воркера — норма: `amo: "off"`
@@ -1054,9 +695,10 @@ curl -i -X POST https://taotransit.com/api/lead \
 
 | Вопрос | Кому | Почему это блокирует |
 |---|---|---|
-| Токен бота: консьерж `@taotransit_bot` или отдельный | заказчику | без него не встаёт Telegram-канал целиком |
-| `CHAT_ID` беседы под заявки | заказчику | у бота с вебхуком `getUpdates` не сработает (§ 6) |
-| Доступ к amoCRM и id новой воронки | заказчику | без `AMO_PIPELINE_ID` сделки лягут в воронку mate |
+| `CHAT_ID` беседы под заявки | заказчику | без него Telegram-канал не встаёт. Беседу заводит заказчик, id снимается `scripts/tg-chat.mjs chats` |
+| `AMO_PIPELINE_ID` новой воронки | заказчику | без него сделки лягут в воронку mate |
+| `TG_BOT_TOKEN`, `AMO_LONG_TOKEN` | заказчику | те же, что у mate; в этом репозитории их нет и быть не должно |
+| Судьба `AMO_ANSWER_FIELD` | нам, после доступа к amo | несуществующий код поля теряет заявку целиком (§ 12 п. 10) |
 | **Юридические документы** | заказчику / юристу | тексты написаны и открываются из формы и футера, но это черновик, и пять реквизитов не заполнены. Список и последствия — `CLAUDE.md` § «Юридические документы» |
-| Свой счётчик Метрики и цель `sendForm` | заказчику | место вызова `ym()` в `lead.ts` помечено комментарием, самого вызова нет; без счётчика конверсия формы не считается, а метка `_ym_uid` уходит пустой. Подключать только за `analyticsAllowed()` из `src/scripts/legal.ts` — иначе отказ в плашке ничего не значит |
-| Хостинг | нам | определяет, нужен ли воркер и какой адаптер (§ 11) |
+| Цель `sendForm` в Метрике | заказчику | счётчики подключены (`CLAUDE.md` § Analytics), но саму цель заводят в интерфейсе Метрики. Пока её нет, конверсия формы не считается |
+| Разворачивать ли воркер | заказчику / нам | на Vercel не обязателен (§ 11). Решение стоит денег только в виде аккаунта Cloudflare |

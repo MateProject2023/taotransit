@@ -10,3 +10,6 @@ reference/shots/
 reference/*-source-rutube.mp4
 .vercel
 reference/compare/
+.dev.vars
+workers/**/.wrangler/
+workers/**/node_modules/

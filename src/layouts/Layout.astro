@@ -96,17 +96,35 @@ const indexable = isProductionHost(Astro.site);
       import { initLeadForm } from '../scripts/lead';
       import { initSelects } from '../scripts/select';
       import { initLegal } from '../scripts/legal';
+      import { initAnalytics } from '../scripts/analytics';
       import { initContacts } from '../scripts/contacts';
       import { initCases } from '../scripts/cases';
       import { footer } from '../content/landing';
-      initNav();
-      initAnimations();
-      initTimeline();
-      initLeadForm();
-      initSelects();
-      initLegal();
-      initContacts(footer.copied);
-      initCases();
+      /* Вся интерактивность страницы лежит в одном бандле, и без обёртки
+         исключение в любом init уносило бы все следующие за ним. Дороже всего
+         это стоило бы форме: она шла четвёртой, за таймлайном — самым сложным
+         скриптом на странице (замер путей SVG, motion, document.fonts.ready).
+         Упал бы он — форма осталась бы без обработчика submit. */
+      const run = (name, init) => {
+        try {
+          init();
+        } catch (error) {
+          console.error(`init ${name} не отработал`, error);
+        }
+      };
+
+      // Сначала то, ради чего страница существует: форма и её счётчик.
+      run('lead', initLeadForm);
+      run('selects', initSelects);
+      run('analytics', initAnalytics);
+
+      // Дальше — в прежнем порядке.
+      run('nav', initNav);
+      run('animations', initAnimations);
+      run('timeline', initTimeline);
+      run('legal', initLegal);
+      run('contacts', () => initContacts(footer.copied));
+      run('cases', initCases);
     </script>
   </body>
 </html>

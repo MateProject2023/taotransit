@@ -6,7 +6,7 @@ Guidance for Claude Code (claude.ai/code) working in this repository.
 
 A **rebuild of the taotransit.com landing page** — currently a Tilda one-pager — as a static Astro + Tailwind site. TAO Transit is a China→CIS freight-forwarding agent (buyout, consolidation, QC, delivery), same client family as the `mate` project in `../mate/mate`.
 
-**Current state: stage 1 (layout) is built, the design refresh on top of it is done, and the lead form's front end is in.** Astro 7 + Tailwind 4, all 13 visible sections rebuilt, zero external requests, no console errors. `PLAN.md` holds the agreed staging.
+**Current state: stage 1 (layout) is built, the design refresh on top of it is done, and the lead form is wired end to end — front end, delivery module, server endpoint and worker.** Astro 7 + Tailwind 4, all 13 visible sections rebuilt, no console errors, and — until the visitor accepts the cookie banner — zero external requests (see § Analytics). `PLAN.md` holds the agreed staging.
 
 The refresh moved the page off the inherited Tilda palette onto the MATE brand tokens in `design-tokens/`. **The site is now light**, on the client's decision — the package is applied as a light system, not ported to a dark ground. Brief and system: `PRODUCT.md` and `DESIGN.md` (see "Design context"). `DESIGN.md` § 7 records all eight passes; the sixth is the light migration, the eighth brings back the original's gradients and rebuilds the surface map, and it names what is still open.
 
@@ -36,14 +36,26 @@ In the steps it works differently, because cutting the fade off under the text l
 - `src/content/legal.ts` — the four legal documents and the consent-banner copy. See "Юридические документы".
 - `src/lib/qr.ts` — build-time QR generator. The Telegram-channel code (`ChannelCard.astro`, at the end of «О нас») is **generated from `site.channel`, not committed as an image**: the client edits that address, and a file would silently start pointing elsewhere. `qrcode-generator` is a build-time dependency; nothing reaches the client bundle.
 - `src/lib/telegram.ts` — how a Telegram link is captioned: `@matebox` for a public channel, `t.me/+…` for an invite link, which has no name to show. Derived from the URL, never written beside it.
-- `FORM.md` — **the lead-delivery spec** (Telegram + amoCRM): routing, request contract, full sources to copy, env vars, traps, rollout order and what is still unanswered. Everything about the form's insides lives there, not here.
+- `FORM.md` — **the lead-delivery spec** (Telegram + amoCRM): routing, request contract, env vars, traps, rollout order and what is still unanswered. Everything about the form's insides lives there, not here.
+- `src/lib/lead.js` — the isomorphic delivery module. **Both receivers bundle this one file**, so a change to it needs two deploys (site + `wrangler deploy`). Web APIs only: a `node:*` import breaks the Worker, not the site.
+- `src/pages/api/lead.ts` — the server receiver: amoCRM always, Telegram when there is no worker or it failed. The only on-demand route on the site.
+- `workers/lead-relay/` — the Cloudflare Worker (Telegram only). Optional on Vercel; see § Hosting.
+- `scripts/amo-fields.mjs` / `scripts/tg-chat.mjs` — the diagnostics that turn the remaining blockers into commands: amo pipelines and fields, the bot's webhook state and chat ids. Both read `.env`.
+- `.env.example` — the annotated template for everything above. The real `.env` is not committed.
+- `src/scripts/analytics.ts` — both counters, and the consent gate in front of them. See § Analytics.
 - `design-tokens/` — the vendored MATE brand package (tokens, font, README). Light-theme; ported, not imported.
 - `reference/` — the acceptance material: `tilda-page.html` (original markup), `content-dump.txt` (per-section text), `assets/` (originals pulled from the CDN), `screenshots/` (original at 5 widths), `shots/` (our build, same widths), `competitors/` (ChinaToday, Sinoruss, Forto at 1440 — the category we are steering away from), `hero-source-rutube.mp4`.
 - `scripts/capture-reference.mjs` — re-shoots the original; `scripts/shoot.mjs` — shoots our build. Both take widths as args.
 
-**Interactivity is a handful of tiny vanilla scripts and nothing else**: the video facade, the scroll-top button, the scroll animations, the timeline line, the lead form (`src/scripts/lead.ts`), the custom select (`src/scripts/select.ts`), the legal dialogs plus consent banner (`src/scripts/legal.ts`), the contact lines' clipboard copy (`src/scripts/contacts.ts`) and the mobile menu (`src/scripts/nav.ts`). The services accordion is `<details>`, the cases carousel is scroll-snap, the legal documents are native `<dialog>`, and the contact lines' shutter and marquee are pure CSS. No framework islands, no hydration.
+**Interactivity is a handful of tiny vanilla scripts and nothing else**: the video facade, the scroll-top button, the scroll animations, the timeline line, the lead form (`src/scripts/lead.ts`), the custom select (`src/scripts/select.ts`), the legal dialogs plus consent banner (`src/scripts/legal.ts`), the counters behind that consent (`src/scripts/analytics.ts`), the contact lines' clipboard copy (`src/scripts/contacts.ts`) and the mobile menu (`src/scripts/nav.ts`). The services accordion is `<details>`, the cases carousel is scroll-snap, the legal documents are native `<dialog>`, and the contact lines' shutter and marquee are pure CSS.  No framework islands, no hydration.
 
-**Stage 1 (current) is layout plus the form's front end** — a faithful, improved rebuild of everything visible, to show the client. The form **backend**, the analytics counter, hosting and the domain cutover are still deferred to stage 2+. Don't build stage-2 machinery while stage 1 is running.
+**All of them are booted from one `<script>` in `Layout.astro`, and each `init*` is wrapped in its own `try/catch` (`run(name, init)`).** They share a bundle, so without the wrapper an exception in any one of them silently killed every call after it. Order is not decorative either: **the form goes first**, then its listbox and its counter, then everything else. It used to sit fourth, behind the timeline — the most fragile script on the page (SVG path measurement, motion, `document.fonts.ready`) — so a crash there left the form with no submit handler. Verified by breaking `getTotalLength()` on purpose: the timeline dies, the form still submits.
+
+⚠️ Adding a script means adding a `run(...)` line, not a bare call. A bare call re-arms exactly the failure this replaced.
+
+**Stage 1 (layout) is done, and the form's back end is now built on top of it** — a faithful, improved rebuild of everything visible, plus a working lead pipeline. What is still deferred: the domain cutover and the secrets themselves (`FORM.md` § 14 lists who owes what).
+
+⚠️ **The form's code is complete; its `.env` is not.** With no secrets set the endpoint answers `503 not_configured` and the form honestly says «Не отправилось» instead of a fake success — see `FORM.md` § 1, which tabulates the three states of an unfilled config.
 
 ## Source of truth for content
 
@@ -138,13 +150,13 @@ Neither video appears in the page source, the page CSS, or the page JS: Tilda in
 | Hero background (`rec615637541`) | `353748922aabee57166d68f663c7fcda` | 20.6 s, 1280×720, silent. **Self-hosted**: `public/video/hero-bg.{webm,mp4}` (1.2 / 1.4 MB) + poster, played by a plain `<video>`. |
 | «Как начать работу» (`rec618180396`) | `04f62f33c29b5d66966477acb057a804` | 2:22, has audio. **Self-hosted too**: `public/video/bot-video.{webm,mp4}` (5.8 / 4.6 MB), `preload="none"` — nothing but the 13 KB cover loads until the visitor clicks. |
 
-**The page now makes zero external requests** — both Rutube embeds are gone.
+**The page makes no external requests of its own** — both Rutube embeds are gone. The only outbound traffic left is the two analytics counters, and they load solely after the visitor presses «Принять» (§ Analytics).
 
 Re-download either video with `scripts/fetch-rutube.mjs <id|url> <name> [--bg]` (`--bg` = silent, heavily compressed, for the hero loop). Originals are kept out of the build in `reference/*-source-rutube.mp4`.
 
 Note on codecs for the bot video: VP9 does **not** win on this material (a screencast of a phone UI). At comparable quality webm came out at 5.8 MB against 4.6 MB for h264 — the `<source>` order still puts webm first, but swapping it costs nothing if size matters more than fidelity.
 
-Why it matters: the Rutube embed drags in the player, its own analytics, and **two third-party Yandex.Metrica counters that are not ours** (`39751470`, `53182297`) — on every visitor, for a silent background loop. The rebuilt page makes **zero external requests**.
+Why it matters: the Rutube embed drags in the player, its own analytics, and **two third-party Yandex.Metrica counters that are not ours** (`39751470`, `53182297`) — on every visitor, for a silent background loop, with no way to gate any of it on consent. The rebuilt page loads **nothing third-party except our own two counters, and those only after consent**.
 
 To refresh the hero video: `curl` the Rutube play-options API with a `Referer: https://rutube.ru/` header, take `video_balancer.m3u8`, then `ffmpeg -headers 'Referer: https://rutube.ru/' -i <m3u8> -c copy`, and re-encode (`-an -crf 28` for mp4, `-crf 38` for webm).
 
@@ -172,27 +184,29 @@ Footer links: concierge bot, `t.me/TradeWithMate_Rail` (manager), `t.me/+UfG8_bV
 - **Never copy `mate`'s `tailwind.config.js`.** Tailwind v4 is CSS-first: tokens go in an `@theme` block in `src/styles/global.css`. Port values, not the file.
 - Astro 7 needs **Node 22.12+ at build time only**. Output is static; nothing runs on the server but a file server.
 - **Zero JS by default.** Popup, burger menu and phone mask are small vanilla scripts. No React islands on a one-pager — blanket `client:load` is the standard Astro anti-pattern.
+- **`@astrojs/vercel` is the adapter**, and it exists for exactly one route (`src/pages/api/lead.ts`). Don't switch `output` to `'server'` to "make it work" — per-route `prerender = false` is the mechanism, and flipping `output` would un-prerender the whole page.
+- **`security.checkOrigin` is deliberately `false`.** Read § The form before restoring it.
 - `astro:assets` `<Image />` for all imagery (auto webp/avif, explicit dimensions, lazy by default).
 
 ## The form
 
-**The whole mechanism lives in `FORM.md`. Read it before touching anything on either side of the form** — routing, request contract, the full sources to copy from `mate`, env vars, ten traps, the rollout order and the open questions are all there. What follows is only what a reader of this file needs to know.
+**The whole mechanism lives in `FORM.md`. Read it before touching anything on either side of the form** — routing, request contract, env vars, fifteen traps, the rollout order and the open questions are all there. What follows is only what a reader of this file needs to know.
 
 **Front end: built (stage 1).** `src/components/LeadForm.astro` + `src/scripts/lead.ts` + `leadForm` in `landing.ts`. It is its own section `#lead`, placed **right after «Как мы работаем»** — the bot section explains how the service works and ends with a button into the bot, and the form is the second way in. Every CTA on the page anchors to it, so no anchor ever scrolls backwards. The section carries its own concierge-bot button beside the form; that is the page's only real fork. Every other CTA is a single button — `DESIGN.md` § 5 «Кнопка бота» has the reasoning, including why the paired buttons that existed briefly were removed.
 
 The «Что нужно» field is a custom listbox (`src/components/Select.astro` + `src/scripts/select.ts`), not a native `<select>`. The original reason was that a native select rendered a light system panel on a dark form; that reason is gone with the dark theme, but the arrow, padding and typography still come from the browser and differ in each. It reproduces native keyboard behaviour; if you touch it, keep that.
 
-The client already assembles the complete request body: `requestId`, all 11 tracking marks, `_ym_uid` from the Metrica cookie, the relay/origin split and the fallback retry. Stage 2 adds addresses, not client code.
+The client assembles the complete request body: `requestId`, all 11 tracking marks, `_ym_uid` from the Metrica cookie, the relay/origin split and the fallback retry. Verified in a browser against a live build — all 11 marks arrive non-empty in both parallel requests, with one shared `requestId`.
 
-⚠️ **Demo mode.** With neither `PUBLIC_LEAD_RELAY_URL` nor `PUBLIC_LEAD_ORIGIN_URL` set at build time, the form **sends nothing**: it shows the success screen and warns in the console. That is the state of every build right now — if the client tests the form, say so out loud. The mode switches off by itself once either address appears in `.env`.
+**Back end: built.** `src/lib/lead.js` (the isomorphic delivery module both receivers bundle), `src/pages/api/lead.ts` (the server receiver), `workers/lead-relay/` (Cloudflare Worker, Telegram only), `scripts/amo-fields.mjs` and `scripts/tg-chat.mjs` (diagnostics), `.env.example` (the template). Decisions taken, with reasoning in `FORM.md`:
 
-**Back end: not started.** No worker, no `src/lib/lead.js`, no `src/pages/api/lead.ts`, no secrets. Decisions already taken (details and reasoning in `FORM.md`):
-
-- **Telegram: the concierge bot already on the site — `@taotransit_bot`** — posting to a **separate chat** (new `CHAT_ID`), not the one clients talk in.
-  - `sendMessage` does **not** conflict with whatever runs that bot — a webhook and outbound sends coexist. **Never call `setWebhook`/`deleteWebhook` on this token**, and note that **`getUpdates` is also unusable** on a bot with a live webhook, so the chat id has to be obtained another way.
-- **amoCRM:** same account (`mategrouptrade`), **different pipeline** (`AMO_PIPELINE_ID`).
-- **Port the pipeline, not the framework.** `../mate/mate/src/lib/lead.js` is deliberately isomorphic — Web APIs only, no `next/*`, no `fs`, no `@/` alias — so it and the `workers/lead-relay` Worker move over unchanged. `FORM.md` § 8 carries both files verbatim, already retargeted, so the `mate` repo is not a dependency.
-- Known trap: `ALLOWED_ORIGINS` lives in one file but feeds two deploy targets — a change needs **both** a push and a manual `wrangler deploy`, or the receivers drift.
+- **Telegram: the same bot as `mate`, not the concierge `@taotransit_bot`** — the client's call. That retires the worst trap of the earlier plan: nothing we run touches the concierge bot's webhook. The chat is **new** (`CHAT_ID`); TAO leads must not land where mate's leads land.
+  - The rule still holds on any live bot: **never call `setWebhook`/`deleteWebhook`**. `scripts/tg-chat.mjs` deliberately cannot, and it refuses `getUpdates` if it finds a webhook.
+- **amoCRM:** same account (`mategrouptrade`), same private integration and long-lived token, **different pipeline** (`AMO_PIPELINE_ID`). The pipeline must have «Неразобранное» enabled or nothing is created — `node scripts/amo-fields.mjs pipelines` prints that per pipeline.
+- **The delivery module is isomorphic on purpose** — Web APIs only, no `node:*`, no bundler aliases — because the Worker and the Astro route bundle the same file. A stray Node import breaks `wrangler deploy`, not the site build, so it surfaces weeks later.
+- ⚠️ `ALLOWED_ORIGINS` lives in one file but feeds two deploy targets — a change needs **both** a site deploy and a manual `wrangler deploy`, or the receivers drift.
+- ⚠️ **`security.checkOrigin` is off in `astro.config.mjs`, on purpose.** Astro's built-in CSRF check rejects cross-origin POSTs with a `text/plain` body — exactly what the form sends (no `Content-Type`, so no preflight). The problem is not strictness but that it is a *second door with different rules*, invisible to `ALLOWED_ORIGINS`, which would make the two receivers answer the same request differently. Ours is the stricter of the two: it 403s when `Origin` is absent, which Astro's does not. `FORM.md` § 9.
+- The endpoint answers **200 almost always** (showing a user a 5xx is pointless, and retries make duplicates). The single exception: when no requested channel is configured at all, it answers `503 not_configured` so the form says «Не отправилось» rather than lying. `GET /api/lead` is a health-check that prints which channels are configured, no secrets in the response.
 
 **About the Tilda popup.** The original markup contains a form (`rec629175892`, 11 `t-input`s, `data-tilda-formskey="7a831eecc53726e35e855bb967566459"`), but **nothing on the page opens it** (verified — see CTA table above) and the client confirms no form is in use. Tilda keeps receivers server-side (`formservices[]` is empty in the HTML), so it is worth a glance in the Tilda panel before cutover — but the evidence says this popup is dead markup, not a live channel. Our form is **not** a revival of it: `DESIGN.md` § 6 forbids modals, so the form is inline.
 
@@ -244,17 +258,34 @@ Note the mismatch worth raising with the client: `Mate inc.` reads as a foreign 
 
 ## Analytics
 
-The live page runs **Yandex.Metrica `94685921`** and no GA. The client wants **a new counter of their own**, added later. Note when doing it: the domain isn't changing, so dropping `94685921` discards the existing history — worth a second look before retiring it.
+**Both counters are in, and both are the client's own** (given by them, not inherited from Tilda): Yandex.Metrica **`112274964`** and the Google tag **`G-C19XJZ9B84`** (gtag.js / GA4 — *not* a GTM container; there is no container id and no `dataLayer`-driven tag manager on the site). Everything about them lives in `src/scripts/analytics.ts`; nothing is inlined into `<head>`.
 
-Two things wait on that counter: the `sendForm` goal in `src/scripts/lead.ts` (the call site is marked, the call itself is absent) and `_ym_uid`, the one tracking mark that comes from a cookie rather than the URL — without a counter the cookie never exists and the mark ships empty.
+The old counter on the live Tilda page — **`94685921`** — is *not* carried over. The domain isn't changing, so retiring it discards the existing history; that was the client's call, but it is worth naming out loud before cutover.
 
-⚠️ **The counter must be gated on consent.** `analyticsAllowed()` in `src/scripts/legal.ts` returns true only after the visitor pressed «Принять» in the banner. Load the counter behind it, and re-check after the banner is answered — otherwise the «Только необходимые» button is a lie and the cookie policy text (`src/content/legal.ts`, § 2 of the cookie doc) becomes false. Bumping `cookieNotice.storageKey` re-asks everyone; do that if the set of trackers changes.
+⚠️ **Nothing loads before consent, by design.** `analyticsAllowed()` in `src/scripts/legal.ts` is true only after «Принять»; `onConsentAnswer()` (added for this) wakes the counters on the same visit, so the answer takes effect without a reload. Not one request leaves the page before the banner is answered — verified with a routed browser run: 0 external requests before, 0 after «Только необходимые», both tags after «Принять». Reintroducing an eager tag would make the «Только необходимые» button a lie and § 2 of the cookie document false.
+
+Four consequences of that stance, each easy to undo by accident:
+
+- **No `<noscript>` pixel for Metrica.** Without JS there is no banner, so there is no consent — a pixel would count the visit anyway. The counter's own snippet ships one; ours deliberately doesn't.
+- **Google's own Consent Mode order is rejected.** Google's documented flow ("load the tag always, signal consent separately") still fires cookieless pings while denied, i.e. a request goes out. We load the tag only after consent and *then* declare state: `analytics_storage: granted`, all three ad categories `denied` — the site runs no ad accounts and the visitor agreed to none. Add Google Ads later and that block is what has to change.
+- **Local builds never count.** `import.meta.env.DEV` plus a localhost check keeps development out of the client's statistics; the console says so instead. To exercise the real thing locally, point a hostname at the file server (`--host-resolver-rules=MAP taotransit.test 127.0.0.1`) rather than removing the check.
+- **The ids are public and live in the code**, with `PUBLIC_YM_ID` / `PUBLIC_GA_ID` as an off switch only: setting either to an empty string kills that counter on a given build. There is nothing secret to configure.
+
+Two things that were waiting on a counter are now wired: the `sendForm` goal (`trackLead()` in `analytics.ts`, called from `src/scripts/lead.ts` **only after delivery succeeds**, so undelivered attempts don't inflate it — GA4 gets the standard `generate_lead` alongside), and `_ym_uid`, the one tracking mark read from a cookie rather than the URL. ⚠️ **The `sendForm` goal has to be created in the Metrica interface** — the call sends nothing until a goal with that id exists.
+
+⚠️ **`_ym_uid` ships empty for anyone who refused analytics** — the cookie is a Metrica cookie and Metrica never loads. That is correct behaviour, not a bug to route around.
+
+`cookieNotice.storageKey` was bumped to `tao-consent-v2` with this change: the set of trackers went from none to two, and everyone who answered the old banner answered a different question. Bump it again whenever that set changes.
 
 SEO baseline on the current page is thin: `<title>` exists, **`meta description` does not**, `robots.txt` is Tilda's boilerplate and points at an `http://` sitemap. Parity is trivial; add description / OG / JSON-LD in the rebuild.
 
 ## Hosting
 
-**Vercel, by the client's decision.** The repo is wired for it: no adapter, `output: 'static'`, Vercel's Astro preset builds `npm run build` → `dist/`. `vercel.json` pins the framework, the build command and three header rules. Nothing else is needed — connect the GitHub repo in the Vercel dashboard and it deploys.
+**Vercel, by the client's decision.** The repo is wired for it: `@astrojs/vercel` as adapter, `output` untouched (so still `'static'`), and exactly one route rendered on demand — `src/pages/api/lead.ts`, the lead receiver, via `export const prerender = false`. Every page still prerenders. `vercel.json` pins the framework, the build command and three header rules. Connect the GitHub repo in the Vercel dashboard and it deploys.
+
+⚠️ **The adapter moves the build out of `dist/` into `.vercel/output/`** (Build Output API). That is why `outputDirectory` was removed from `vercel.json` — left in, Vercel would serve a directory that is no longer the output. After the first deploy, check with `curl -I` that the three security headers from `vercel.json` still arrive: the Build Output API and `vercel.json` routing are merged by the platform, and that merge is the one thing here not verifiable locally.
+
+The serverless function weighs ~22 MB, almost all of it `sharp` (bundled for the `/_image` endpoint, which nothing uses — every image is optimized at build). Vercel's limit is 250 MB, so this is noise, not a problem.
 
 ⚠️ **Vercel is unreliable from Russia without a VPN**, and the audience — sellers in RU/KZ/UZ — is exactly who has to open the link. This was the reason the earlier plan ruled Vercel out for the client preview (`PLAN.md` § 1.5). The client chose it anyway; say it out loud before the domain cutover, not after.
 
@@ -279,7 +310,7 @@ taotransit.com currently sits behind **DDoS-Guard**. Any cutover has to start fr
 
 The `mate` Timeweb VPS remains the fallback (`147.45.157.229` is the live box, `89.223.70.95` is idle standby — the `mate-server` SSH alias points at the standby, not the live one). If we go there, read `mate`'s CLAUDE.md § "RU reachability / ТСПУ" **before** touching nginx or certbot: HTTP/2 on every `:443` listen line is load-bearing for Russian reachability, and `certbot --nginx --expand` can silently strip it.
 
-Note for stage 2: a Vercel deploy also changes the form's back end. Vercel supports the API route (`@astrojs/vercel` adapter, `prerender = false`), but amoCRM would then be called from outside Russia — see `FORM.md` § 11.
+Two consequences for the form. amoCRM is called from outside Russia — reachable, just slower. And **the Cloudflare Worker becomes optional**: it existed to reach Telegram from a Russian VPS, and Vercel reaches Telegram directly. With `PUBLIC_LEAD_RELAY_URL` empty the form sends one request to `/api/lead` and the server carries both channels; the client code already branches on that with no edit. Deploy the worker only for a second independent route to Telegram, or for the rate limit — `FORM.md` § 11 and `workers/lead-relay/README.md`.
 
 ## Conventions
 
@@ -310,6 +341,7 @@ Copy has been touched seven times, always on the client's explicit instruction: 
   - ⚠️ The audit skips `aria-hidden="true"` subtrees. Exactly one thing relies on that: the embossed roman numerals in «Этапы работы», at 1.34:1 by design (the `<ol>` already carries step order). **Never hide real text behind `aria-hidden` to pass the audit.**
   - `scripts/veil-audit.mjs [--alpha=…] [ШxВ…]` — the hero veil, which none of the others can see. It pauses the background clip, steps it every half-second, hides the taglines (`visibility: hidden`, the background stays) and reads the real pixels under their boxes across five viewports. `--alpha` overrides the veil density on the fly — that is how the density was picked.
   - `scripts/qr-audit.mjs [ширины]` — not colour, same family: it screenshots every `[data-qr]` at its real size (`deviceScaleFactor: 1`, i.e. as many pixels as a plain phone screen gets) and hands the shot to a decoder, then checks what was read against the `href` of the link the code is drawn inside. That comparison is independent — the href is what a click does, the code is what a scan does — where a list of addresses in the script would only check itself. A code that scans but leads elsewhere is worse than one that doesn't scan.
+  - `scripts/serve-build.mjs` — поднимает собранную страницу на 4399 (`npm run preview`); без него замерять нечего, потому что `astro preview` с адаптером не работает.
   - `scripts/compare-feedback.mjs` — shoots the live original, our build and mate's contact block at the same places and states into `reference/compare/` (git-ignored — regenerate, don't commit).
 
   ⚠️ **The hero veil used to be a blind spot of all of them** — `contrast-audit.mjs` reads `background-color`, and under the hero taglines that is the section's solid `bg-brand`, i.e. 10.71:1 out of thin air. `veil-audit.mjs` now covers it, and the number it reports depends on **where the bright content sits in this particular clip**: at 62% the worst pixel under the taglines is 5.18:1, while across the whole frame the same 62% would be 3.73:1. **Replace the clip and the density has to be picked again** — run `veil-audit`, don't assume 62% still holds. Blur buys nothing here: the clip's white areas are large, and even σ=10 moves the worst pixel by hundredths.
@@ -383,7 +415,7 @@ Three things from them worth carrying in your head:
 Дважды за разработку `astro dev` вводил в заблуждение:
 
 1. **500 на всех `/_image`** — процесс, поднятый до переименования файлов в `src/assets/img/`, продолжал отдавать битые ссылки; на странице были пустые места вместо картинок.
-2. **Старые стили из `<style>` компонента при новой разметке.** После правки блока стилей в `About.astro` dev отдавал прежний CSS вместе с обновлённым HTML: карточки таймлайна получались 342×66 вместо 398×110 — без полей, текст впритык, линии в пустоте. Сборка (`astro preview`) при этом была правильной.
+2. **Старые стили из `<style>` компонента при новой разметке.** После правки блока стилей в `About.astro` dev отдавал прежний CSS вместе с обновлённым HTML: карточки таймлайна получались 342×66 вместо 398×110 — без полей, текст впритык, линии в пустоте. Сборка при этом была правильной.
 
 **Правило: после правок в `<style>` компонента или переименования ассетов — перезапускать dev начисто**, а не полагаться на HMR:
 
@@ -391,4 +423,12 @@ Three things from them worth carrying in your head:
 npx astro dev stop && rm -rf node_modules/.vite .astro && npm run dev -- --host --port 4321
 ```
 
-Если увиденное расходится с ожиданиями — сначала сверяться с `astro preview` на отдельном порту, и только потом искать баг в коде.
+Если увиденное расходится с ожиданиями — сначала сверяться с собранной страницей на отдельном порту, и только потом искать баг в коде:
+
+```
+npm run build && npm run preview      # http://127.0.0.1:4399
+```
+
+⚠️ **`astro preview` больше не работает** — адаптер `@astrojs/vercel` эту команду не реализует, а сама сборка уезжает из `dist/` в `.vercel/output/static/`. `npm run preview` теперь поднимает `scripts/serve-build.mjs`, файловый сервер по этой папке. Порт 4399 совпадает с дефолтом `contrast-audit.mjs`, так что замерялки запускаются без флагов.
+
+Одного он не отдаёт: `/api/lead` — эндпоинт рендерится по запросу и лежит в `.vercel/output/functions`. Для него нужен `npm run dev`.

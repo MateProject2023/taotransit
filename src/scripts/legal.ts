@@ -30,11 +30,23 @@ function writeConsent(value: Exclude<Consent, null>) {
 }
 
 /**
- * Разрешена ли аналитика. Отсюда её будет спрашивать счётчик этапа 3:
- * пока ответа нет или он «только необходимые», счётчик не подключается.
+ * Разрешена ли аналитика. Отсюда её спрашивают счётчики (src/scripts/analytics.ts):
+ * пока ответа нет или он «только необходимые», ни один не подключается.
  */
 export function analyticsAllowed(): boolean {
   return readConsent() === 'accepted';
+}
+
+/** Кого разбудить, когда посетитель ответит на плашку. */
+const consentListeners = new Set<(allowed: boolean) => void>();
+
+/**
+ * Подписка на ответ. Нужна, чтобы согласие включало счётчик тем же визитом,
+ * а не со следующей загрузки страницы. Хранится в модуле, поэтому порядок
+ * initLegal / initAnalytics в разметке значения не имеет.
+ */
+export function onConsentAnswer(listener: (allowed: boolean) => void) {
+  consentListeners.add(listener);
 }
 
 export function initLegal() {
@@ -69,6 +81,7 @@ export function initLegal() {
   const answer = (value: Exclude<Consent, null>) => {
     writeConsent(value);
     banner.hidden = true;
+    for (const listener of consentListeners) listener(value === 'accepted');
   };
 
   banner.querySelector('[data-cookie-accept]')?.addEventListener('click', () => answer('accepted'));

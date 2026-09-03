@@ -39,10 +39,19 @@ const { consent } = leadForm;
     </div>
 
     <div>
+      {/* method="post" — страховка, а не рабочий маршрут: отправку перехватывает
+          скрипт (preventDefault). Но если он не доехал или упал, форма отправится
+          нативно, а по умолчанию это GET — то есть имя, телефон и почта уехали бы
+          в адресную строку, в историю браузера и в заголовок Referer
+          (OWASP «Information exposure through query strings», CWE-598). С POST
+          в том же сценарии не утекает ничего. action не задан намеренно: цель —
+          не доставить заявку без JS (её всё равно некому принять в таком виде),
+          а не разгласить её. */}
       <form
         data-lead-form
         data-lead-errors={errors}
         data-lead-submitting={leadForm.submitting}
+        method="post"
         novalidate
         class="rounded-3xl bg-white px-5 py-6 text-ink sm:px-8 sm:py-7"
       >

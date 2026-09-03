@@ -1,0 +1,19 @@
+{
+  "name": "taotransit-lead-relay",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker: приём заявок с сайта taotransit.com → Telegram",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "secrets": "wrangler secret list"
+  },
+  "devDependencies": {
+    "wrangler": "^4.120.1"
+  }
+}

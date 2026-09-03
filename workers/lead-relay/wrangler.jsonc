@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // ⚠️ Имя обязано отличаться от mate-lead-relay: аккаунт Cloudflare тот же,
+  // и одинаковое имя перезаписало бы воркер matestrade.com.
+  "name": "taotransit-lead-relay",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-10",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Воркеру разрешён ТОЛЬКО Telegram. amoCRM — российский сервис, и ходит в него
+    // исключительно сервер сайта напрямую: хоп через Cloudflare дал бы лишнюю
+    // латентность и лишнюю точку отказа. Даже если клиент попросит здесь amo —
+    // будет отсечено (resolveChannels).
+    "LEAD_CHANNELS": "telegram",
+    // Клиент ждёт воркер 4 с (RELAY_TIMEOUT_MS в src/scripts/lead.ts) — доставка
+    // дольше этого всё равно никому не отдастся, поэтому бюджет канала здесь
+    // короче дефолтных 8 с, которые остаются у серверного роута.
+    "OUTBOUND_TIMEOUT_MS": "3000"
+    // Добавочные origin-ы поверх ALLOWED_ORIGINS (src/lib/lead.js), через запятую.
+    // Сюда кладётся адрес превью-деплоя Vercel, если форму тестируют не с боевого
+    // домена: "LEAD_ALLOWED_ORIGINS": "https://taotransit.vercel.app"
+  },
+  // Антиспам: не более 5 заявок с одного IP в минуту. period может быть только 10 или 60.
+  // namespace_id уникален в пределах аккаунта — у mate занят 1001.
+  "ratelimits": [
+    {
+      "name": "LEAD_LIMITER",
+      "namespace_id": "2001",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ]
+  // Секреты (НЕ хранить здесь, задаются через `wrangler secret put <NAME>`):
+  //   TG_BOT_TOKEN, CHAT_ID
+  // Опционально: CHAT_THREAD_ID — если беседа с темами и писать надо в конкретную.
+}

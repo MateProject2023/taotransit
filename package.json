@@ -9,16 +9,19 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "capture": "node scripts/capture-reference.mjs"
+    "preview": "node scripts/serve-build.mjs",
+    "capture": "node scripts/capture-reference.mjs",
+    "serve": "node scripts/serve-build.mjs"
   },
   "dependencies": {
+    "@astrojs/vercel": "^11.0.10",
     "astro": "^7.2.9",
     "motion": "^13.1.1",
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.1",
     "jsqr": "^1.4.0",
     "playwright": "^1.62.1",
     "tailwindcss": "^4.3.3"
