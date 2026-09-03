@@ -13,6 +13,19 @@
  * До 1024px это единственная навигация: горизонтальной ленты с прокруткой
  * больше нет. Порог тот же, на котором пилюля перестаёт быть лентой —
  * восьми пунктам нужно 926px, и колонка доходит до этого только к 1024.
+ *
+ * ⚠️ Открытие и закрытие ведёт скрипт, `preventDefault` стоит на каждом
+ * нажатии. Так пришлось из-за двух источников дёрганья, и оба неочевидны:
+ *
+ *  1. Событие `toggle` у <details> асинхронное. Если ждать его, браузер
+ *     успевает нарисовать уже открытую панель в полную силу, и только
+ *     следующим кадром она прыгает в масштаб 0.92 и начинает выезжать.
+ *     Поэтому стартовое состояние ставится ДО `open = true`, в том же
+ *     такте: первый же кадр рисуется уже правильным.
+ *  2. <details> прячет содержимое мгновенно, поэтому уход панели
+ *     приходится анимировать до снятия `open` — а значит крест держался бы
+ *     ещё 130 мс после нажатия. На время ухода вешаем `data-nav-closing`,
+ *     и CSS возвращает штрихи сразу (см. `nav-toggle` в global.css).
  */
 import { animate } from 'motion/mini';
 
@@ -21,6 +34,10 @@ import { animate } from 'motion/mini';
    в разметке и вернётся при обратном сужении. */
 const DESKTOP = '(width >= 64rem)';
 const EASE = [0.25, 1, 0.5, 1] as const;
+const OPEN_MS = 0.18;
+/* Уход короче прихода: уходящее меню читается как задержка, а приходящее —
+   как движение. */
+const CLOSE_MS = 0.13;
 
 export function initNav() {
   const root = document.querySelector<HTMLDetailsElement>('details[data-nav]');
@@ -31,59 +48,58 @@ export function initNav() {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const desktop = matchMedia(DESKTOP);
 
-  /** Идущая анимация закрытия. Пока она есть, `open` ещё true. */
-  let closing: ReturnType<typeof animate> | null = null;
+  /** Идущая анимация ухода. Пока она есть, `open` ещё стоит. */
+  let leaving: ReturnType<typeof animate> | null = null;
 
-  const animateIn = () => {
-    if (reduced.matches) return;
-    animate(
-      panel,
-      { opacity: [0, 1], transform: ['scale(0.92)', 'scale(1)'] },
-      { duration: 0.18, ease: EASE },
-    );
+  const clearLeaving = () => {
+    leaving = null;
+    root.removeAttribute('data-nav-closing');
+  };
+
+  const open = () => {
+    if (reduced.matches) {
+      root.open = true;
+      return;
+    }
+    // Стартовое состояние — до раскрытия и в том же такте: см. п. 1 выше.
+    panel.style.opacity = '0';
+    panel.style.transform = 'scale(0.92)';
+    root.open = true;
+    animate(panel, { opacity: 1, transform: 'scale(1)' }, { duration: OPEN_MS, ease: EASE });
   };
 
   const close = () => {
-    if (!root.open || closing) return;
+    if (!root.open || leaving) return;
     if (reduced.matches) {
       root.open = false;
       return;
     }
-    // Закрытие короче открытия: уходящее меню читается как задержка, а
-    // приходящее — как движение.
-    const anim = animate(panel, { opacity: 0, transform: 'scale(0.96)' }, { duration: 0.12, ease: EASE });
-    closing = anim;
+    // Иконка возвращается сразу, панель — за CLOSE_MS: см. п. 2 выше.
+    root.setAttribute('data-nav-closing', '');
+    const anim = animate(panel, { opacity: 0, transform: 'scale(0.96)' }, { duration: CLOSE_MS, ease: EASE });
+    leaving = anim;
     anim.then(() => {
-      if (closing !== anim) return; // закрытие отменили, панель уже открыта
-      closing = null;
+      if (leaving !== anim) return; // уход отменили, панель уже открыта
+      clearLeaving();
       root.open = false;
-      // Инлайновые стили от анимации сняты: без них следующее открытие
-      // без JS-анимации (reduced-motion) не покажет панель прозрачной.
+      // Инлайновые стили от анимации сняты: иначе следующее открытие без
+      // анимации (reduced-motion) покажет панель прозрачной.
       panel.style.opacity = '';
       panel.style.transform = '';
     });
   };
 
-  /*
-    Открытие отдаём браузеру, закрытие перехватываем: <details> прячет
-    содержимое мгновенно, и уходящей анимации просто негде случиться.
-  */
   summary.addEventListener('click', (event) => {
-    // Нажатие в те 120 мс, пока панель уезжает, значит «всё-таки открыть».
-    if (closing) {
-      event.preventDefault();
-      closing.stop();
-      closing = null;
-      animateIn();
+    event.preventDefault(); // раскрытием управляем сами, всегда
+    // Нажатие в те 130 мс, пока панель уезжает, значит «всё-таки открыть».
+    if (leaving) {
+      leaving.stop();
+      clearLeaving();
+      animate(panel, { opacity: 1, transform: 'scale(1)' }, { duration: OPEN_MS, ease: EASE });
       return;
     }
-    if (!root.open) return; // откроется само, анимацию поставит toggle
-    event.preventDefault();
-    close();
-  });
-
-  root.addEventListener('toggle', () => {
-    if (root.open) animateIn();
+    if (root.open) close();
+    else open();
   });
 
   // Клик мимо. Слушаем на документе, а не на подложке: подложки нет.
@@ -104,6 +120,9 @@ export function initNav() {
   });
 
   desktop.addEventListener('change', (event) => {
-    if (event.matches) root.open = false;
+    if (event.matches) {
+      root.open = false;
+      clearLeaving();
+    }
   });
 }

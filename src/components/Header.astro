@@ -30,10 +30,6 @@ const href = (key: keyof typeof site) =>
 <header class="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-6">
   <div class="header-container">
     {/*
-      До 1024px — бургер и панель под ним. Обёртка `relative`: панель
-      привязана к кнопке, а не к экрану, — из её угла она и вырастает.
-    */}
-    {/*
       До 1024px — бургер и панель под ним.
 
       <details>, а не кнопка с `hidden`: раскрытие, клавиатура и семантика
@@ -43,18 +39,19 @@ const href = (key: keyof typeof site) =>
 
       `relative` на самом <details>: панель привязана к бургеру, а не к
       экрану, — из её угла она и вырастает.
+
+      Вид бургера живёт в `nav-toggle` и `nav-bars` (global.css), потому что
+      завязан на состояние <details> в обе стороны: `[open]` открывает крест,
+      а `[data-nav-closing]`, который вешает скрипт на время ухода панели,
+      возвращает штрихи сразу по нажатию. Утилитами в разметке это условие
+      не записывается.
     */}
-    <details class="group relative lg:hidden" data-nav>
-      <summary
-        aria-label="Меню"
-        class="flex size-12 cursor-pointer list-none items-center justify-center rounded-full bg-white/90 text-ink ring-1 ring-line backdrop-blur-md transition-colors duration-200 ease-out-quart marker:content-none group-open:bg-brand group-open:text-white group-open:ring-brand sm:size-14 [&::-webkit-details-marker]:hidden"
-      >
-        {/* Три штриха, сходящиеся в крест. Состояние читается из атрибута
-            `open` на <details>, второго источника правды нет. */}
-        <span class="relative block h-4 w-6" aria-hidden="true">
-          <span class="absolute inset-x-0 top-0 h-0.5 rounded-full bg-current transition-transform duration-200 ease-out-quart group-open:translate-y-[7px] group-open:rotate-45"></span>
-          <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-current transition-opacity duration-200 ease-out-quart group-open:opacity-0"></span>
-          <span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-current transition-transform duration-200 ease-out-quart group-open:-translate-y-[7px] group-open:-rotate-45"></span>
+    <details class="relative lg:hidden" data-nav>
+      <summary aria-label="Меню" class="nav-toggle">
+        {/* Три штриха, сходящиеся в крест. Состояние — в CSS и читается из
+            `open`, чтобы иконка работала и без скрипта. */}
+        <span class="nav-bars" aria-hidden="true">
+          <span></span><span></span><span></span>
         </span>
       </summary>
 

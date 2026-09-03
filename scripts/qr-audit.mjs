@@ -11,21 +11,22 @@
  * квадратик, просто нечитаемый.
  *
  * Поэтому проверка не смотрит на разметку, а снимает элемент в его
- * фактическом размере и отдаёт снимок декодеру. Совпадение с ожидаемым
- * адресом проверяется тут же: код, который читается, но ведёт не туда,
- * хуже нечитаемого.
+ * фактическом размере и отдаёт снимок декодеру. Прочитанное сверяется с
+ * `href` ссылки, внутри которой код нарисован: клик и сканирование обязаны
+ * вести в одно место, а код, который читается, но ведёт не туда, хуже
+ * нечитаемого.
  */
 import { chromium } from 'playwright';
 import jsQR from 'jsqr';
-import { site } from '../src/content/landing.ts';
 
 const args = process.argv.slice(2);
 const url = (args.find((a) => a.startsWith('--url=')) || '--url=http://127.0.0.1:4399').slice(6);
 const widths = args.filter((a) => /^\d+$/.test(a)).map(Number);
 const WIDTHS = widths.length ? widths : [1440, 959, 479];
 
-/** Что должно прочитаться в каждом коде страницы, по порядку. */
-const EXPECTED = [site.channel];
+/* Сколько кодов должно быть на странице. Число здесь затем, чтобы код,
+   потерянный вёрсткой, отличался от кода, которого и не было. */
+const EXPECTED_COUNT = 2;
 
 const browser = await chromium.launch();
 let failures = 0;
@@ -40,9 +41,9 @@ for (const width of WIDTHS) {
   const count = await codes.count();
   let bad = 0;
 
-  if (count !== EXPECTED.length) {
+  if (count !== EXPECTED_COUNT) {
     bad += 1;
-    console.log(`  ✗ кодов на странице ${count}, ожидали ${EXPECTED.length}`);
+    console.log(`  ✗ кодов на странице ${count}, ожидали ${EXPECTED_COUNT}`);
   }
 
   for (let i = 0; i < count; i++) {
@@ -50,6 +51,12 @@ for (const width of WIDTHS) {
     await el.scrollIntoViewIfNeeded();
     const box = await el.boundingBox();
     const shot = await el.screenshot();
+
+    /* Сверяем код не со списком в этом файле, а со ссылкой, внутри которой
+       он нарисован. Это независимая проверка: href — то, что делает клик,
+       код — то, что делает сканирование, и они обязаны совпадать. Список
+       адресов рядом со списком в разметке проверял бы сам себя. */
+    const href = await el.evaluate((node) => node.closest('a')?.href ?? null);
 
     const pixels = await page.evaluate(async (bytes) => {
       const bitmap = await createImageBitmap(new Blob([new Uint8Array(bytes)], { type: 'image/png' }));
@@ -63,14 +70,16 @@ for (const width of WIDTHS) {
     }, Array.from(shot));
 
     const read = jsQR(Uint8ClampedArray.from(pixels.data), pixels.w, pixels.h);
-    const want = EXPECTED[i];
 
-    if (!read) {
+    if (!href) {
+      bad += 1;
+      console.log(`  ✗ код #${i + 1} не лежит внутри ссылки — сверять не с чем`);
+    } else if (!read) {
       bad += 1;
       console.log(`  ✗ код #${i + 1} (${Math.round(box.width)}px) не читается`);
-    } else if (read.data !== want) {
+    } else if (read.data !== href) {
       bad += 1;
-      console.log(`  ✗ код #${i + 1} ведёт на ${read.data}, а рядом написано ${want}`);
+      console.log(`  ✗ код #${i + 1} ведёт на ${read.data}, а ссылка под ним — на ${href}`);
     }
   }
 

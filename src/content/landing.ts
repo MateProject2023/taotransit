@@ -9,7 +9,7 @@ export const site = {
     'Ищем, выкупаем и отправляем товары из Китая с 2013 года. Выкуп с 1688, taobao, alibaba, POIZON, консолидация на своих складах в Иу и Гуанчжоу, проверка товара, гарантия сроков доставки.',
   bot: 'https://t.me/taotransit_bot',
   manager: 'https://t.me/TradeWithMate_Rail',
-  channel: 'https://t.me/+UfG8_bV1wO5lYmQ6',
+  channel: 'https://t.me/matebox',
   email: 'keepintouch@matestrade.com',
   bisma: 'https://t.me/bahtiarismagilov',
 } as const;
@@ -291,6 +291,9 @@ export const howToStart = {
   cta: 'консьерж бот',
   askLead: 'Появились вопросы?',
   askLink: 'напишите менеджеру',
+  /** Подпись у кода канала рядом с кнопкой. Второй, тихий ход: бот — чтобы
+   *  начать, канал — чтобы сначала посмотреть, как мы работаем, со стороны. */
+  channel: 'телеграм-канал',
   video: {
     title: 'Как работает консьерж-бот TaoTransit',
     webm: '/video/bot-video.webm',

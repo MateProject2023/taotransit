@@ -738,3 +738,95 @@
     opacity: 0.35;
   }
 }
+
+/* ─── Мобильное меню ──────────────────────────────────────────────────
+   Бургер и панель до 1024px. Разметка — <details>/<summary>, поэтому без
+   JS меню всё равно открывается; скрипт добавляет только анимацию панели,
+   закрытие кликом мимо и по Escape.
+
+   Состояние иконки и кнопки читается из `[open]` — того же атрибута, что
+   видит браузер без JS. Пока панель уезжает, скрипт держит на <details>
+   атрибут `data-nav-closing`: <details> прячет содержимое мгновенно,
+   поэтому закрытие приходится анимировать до снятия `open`, а иконка
+   обязана вернуться в исходное сразу по нажатию. Без этого крест держится
+   ещё 130 мс после клика — рассинхрон, который и читается как дёрганье. */
+@utility nav-toggle {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: color-mix(in oklab, var(--color-white) 90%, transparent);
+  color: var(--color-ink);
+  /* Не тень, а обводка: тот же приём, что `ring-1 ring-line` у пилюли.
+     Теней в системе нет вовсе. */
+  box-shadow: 0 0 0 1px var(--color-line);
+  backdrop-filter: blur(12px);
+  list-style: none;
+  transition:
+    background-color 200ms var(--ease-out-quart),
+    box-shadow 200ms var(--ease-out-quart),
+    color 200ms var(--ease-out-quart);
+
+  /* Стрелку раскрытия убираем в обоих написаниях: ::marker для актуальных
+     браузеров, ::-webkit-details-marker для старых WebKit. */
+  &::marker {
+    content: none;
+  }
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (width >= 40rem) {
+    height: 3.5rem;
+    width: 3.5rem;
+  }
+
+  [open]:not([data-nav-closing]) > & {
+    background-color: var(--color-brand);
+    color: var(--color-white);
+    box-shadow: 0 0 0 1px var(--color-brand);
+  }
+}
+
+/* Три штриха, сходящиеся в крест. Полоски по 2px в поле 16px: верхняя на 0,
+   средняя на 7, нижняя на 14 — поэтому крайние сходятся сдвигом ровно на 7. */
+@utility nav-bars {
+  position: relative;
+  display: block;
+  height: 1rem;
+  width: 1.5rem;
+
+  & > span {
+    position: absolute;
+    inset-inline: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background-color: currentColor;
+    transition:
+      transform 200ms var(--ease-out-quart),
+      opacity 200ms var(--ease-out-quart);
+  }
+  & > span:nth-child(1) {
+    top: 0;
+  }
+  & > span:nth-child(2) {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  & > span:nth-child(3) {
+    bottom: 0;
+  }
+
+  [open]:not([data-nav-closing]) & > span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  [open]:not([data-nav-closing]) & > span:nth-child(2) {
+    opacity: 0;
+  }
+  [open]:not([data-nav-closing]) & > span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+}

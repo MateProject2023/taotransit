@@ -4,6 +4,7 @@ import logo from '../assets/img/logo-footer-ink.svg';
 import bisma from '../assets/img/bisma-logo.png';
 import { footer, site, footerLegal } from '../content/landing';
 import { qrCode } from '../lib/qr';
+import { telegramLabel } from '../lib/telegram';
 
 const href = (key: keyof typeof site) =>
   key === 'email' ? `mailto:${site.email}` : site[key];
@@ -12,11 +13,10 @@ const href = (key: keyof typeof site) =>
    в @keyframes попадает точно на стык и повтор не заметен. */
 const REPEAT = 8;
 
-/* QR канала считается здесь, на сборке, из того же адреса, что стоит в
-   ссылке рядом. Схема в подписи срезана: под кодом нужна не строка для
-   копирования, а то, что человек узнаёт глазом. */
+/* И код, и подпись считаются здесь, на сборке, из одного адреса: под кодом
+   нужна не строка для копирования, а имя, которым канал ищут в телеграме. */
 const channelQr = qrCode(site.channel);
-const channelLabel = site.channel.replace(/^https?:\/\//, '');
+const channelLabel = telegramLabel(site.channel);
 ---
 
 {/*
