@@ -12,39 +12,50 @@ const label = telegramLabel(site.channel);
 {/*
   Плитка канала. Стоит в конце «О нас», сразу за змейкой «Все началось
   в 2013…»: история компании заканчивается, а канал — то место, где она
-  продолжается на этой неделе. Заказчик просил перенести её сюда с самого
-  низа страницы.
+  продолжается на этой неделе.
 
-  Секция бумажная, поэтому плитка — белая карточка с волосяной рамкой:
-  Правило белой карточки, 1.03:1 к бумаге само по себе объектом не читается.
-  Соседняя секция «Ценности» для неё не подошла бы — она залита брендовым,
-  а карточка внутри залитой секции там запрещена прямо.
+  Заливка брендовая по просьбе заказчика, и это не третья поверхность:
+  брендовая плита внутри бумажной секции — приём, который на странице уже
+  есть, плита-гарантия в «Почему мы?». Волосяной рамки поэтому нет: с
+  бумагой фиолет спорит сам, обводка нужна только белому по белому.
 
-  Ссылок две и обе ведут в канал: заголовок поста — чтобы прочитать,
-  код — чтобы подписаться с телефона, глядя в чужой экран. Это разные
-  действия, поэтому и цели у них разные, хоть адрес и один.
+  Соседняя секция «Ценности» под плитку не годится: она залита целиком, а
+  карточка внутри залитой секции запрещена прямо.
+
+  Ссылок две и ведут они в разные места: заголовок — в сам пост, код —
+  в канал. Это разные действия: прочитать одно и подписаться на всё.
 */}
-<div class="mt-16 rounded-3xl border border-line bg-white p-6 sm:p-10 lg:mt-20">
+<div class="mt-16 rounded-3xl bg-brand p-6 text-white sm:p-10 lg:mt-20">
   <div class="flex flex-col items-center gap-8 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-12 sm:text-left">
     <div class="max-w-(--container-prose)">
       <h3 class="text-2xl leading-tight font-black sm:text-3xl">{channel.title}</h3>
-      <p class="mt-3 text-base text-ink-muted text-pretty sm:text-lg">{channel.body}</p>
+      <p class="mt-3 text-base text-on-brand text-pretty sm:text-lg">{channel.body}</p>
 
-      {/* Волосяная линия, а не второй заголовок: ниже не новая тема, а
-          то же самое, только конкретно. */}
-      <hr class="my-6 border-t border-line" />
+      {/* Волосяная линия на заливке — свой токен: #8D8F99 на фиолете даёт
+          1.52:1 и линией быть перестаёт. */}
+      <hr class="my-6 border-t border-line-on-brand" />
 
-      <p class="text-sm text-ink-muted">{channel.latestLabel}</p>
+      <p class="text-sm text-on-brand">{channel.latestLabel}</p>
+      {/*
+        Ведёт в сам пост, а не в канал: человек уже прочитал заголовок, и
+        высадить его на ленту значит заставить искать то, что ему только что
+        показали.
+
+        Наведение гасит белое до --on-brand — тот же ход, что у пунктов
+        аккордеона «Услуги»; вверх по светлоте от белого идти некуда.
+        Кольцо фокуса переопределено на белое: базовое брендовое на этой
+        заливке невидимо.
+      */}
       <a
-        href={site.channel}
+        href={channel.latestHref}
         target="_blank"
         rel="noopener"
-        class="group mt-2 block rounded-sm"
+        class="group mt-2 block rounded-sm focus-visible:outline-white"
       >
-        <span class="text-lg leading-snug font-bold text-balance transition-colors group-hover:text-brand sm:text-xl">
+        <span class="text-lg leading-snug font-bold text-balance transition-colors group-hover:text-on-brand sm:text-xl">
           {channel.latestTitle}
         </span>
-        <span class="mt-2 block text-sm text-ink-muted text-pretty sm:text-base">
+        <span class="mt-2 block text-sm text-on-brand text-pretty sm:text-base">
           {channel.latestBody}
         </span>
       </a>
@@ -54,29 +65,32 @@ const label = telegramLabel(site.channel);
       href={site.channel}
       target="_blank"
       rel="noopener"
-      class="group flex shrink-0 flex-col items-center gap-3 rounded-lg"
+      class="group flex shrink-0 flex-col items-center gap-3 rounded-lg focus-visible:outline-white"
     >
       {/*
-        Код брендовый, а не чернильный: 10.71:1 на белом — сканеру этого
-        с запасом хватает (он порогует яркость, а не тон), а страница не
-        получает чёрного пятна там, где всё остальное фиолетовое.
-        Проверено чтением, а не на глаз: `scripts/qr-audit.mjs`.
+        Плашка под кодом белая и не обсуждается: сканеры порогуют яркость и
+        ждут тёмное на светлом, инвертированный код половина из них просто
+        не увидит. Зона покоя в четыре модуля уже заложена внутрь viewBox
+        и прозрачна, то есть белая здесь же, — `p-2` добавлен только ради
+        внятного края.
 
-        Зона покоя в четыре модуля заложена внутрь viewBox, поэтому её
-        нельзя срезать вёрсткой. `crispEdges` — чтобы сглаживание не
-        размывало границы модулей на дробном масштабе.
+        Модули брендовые, а не чернильные: 10.71:1 на белом сканеру хватает
+        с запасом, а плашка не становится чёрным пятном на заливке.
+        Проверено чтением, а не на глаз: `scripts/qr-audit.mjs`.
       */}
-      <svg
-        viewBox={`0 0 ${qr.size} ${qr.size}`}
-        class="size-36 text-brand sm:size-40"
-        shape-rendering="crispEdges"
-        data-qr
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path d={qr.d} fill="currentColor" />
-      </svg>
-      <span class="text-sm text-ink-muted underline decoration-[0.5px] underline-offset-4 transition-colors group-hover:text-ink">
+      <span class="rounded-2xl bg-white p-2">
+        <svg
+          viewBox={`0 0 ${qr.size} ${qr.size}`}
+          class="block size-36 text-brand sm:size-40"
+          shape-rendering="crispEdges"
+          data-qr
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d={qr.d} fill="currentColor" />
+        </svg>
+      </span>
+      <span class="text-sm text-on-brand underline decoration-[0.5px] underline-offset-4 transition-colors group-hover:text-white">
         {label}
       </span>
     </a>
