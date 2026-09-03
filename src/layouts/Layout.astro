@@ -90,6 +90,7 @@ const indexable = isProductionHost(Astro.site);
     <CookieBanner />
 
     <script>
+      import { initNav } from '../scripts/nav';
       import { initAnimations } from '../scripts/animations';
       import { initTimeline } from '../scripts/timeline';
       import { initLeadForm } from '../scripts/lead';
@@ -98,6 +99,7 @@ const indexable = isProductionHost(Astro.site);
       import { initContacts } from '../scripts/contacts';
       import { initCases } from '../scripts/cases';
       import { footer } from '../content/landing';
+      initNav();
       initAnimations();
       initTimeline();
       initLeadForm();

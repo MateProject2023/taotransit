@@ -14,10 +14,12 @@
   },
   "dependencies": {
     "astro": "^7.2.9",
-    "motion": "^13.1.1"
+    "motion": "^13.1.1",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "jsqr": "^1.4.0",
     "playwright": "^1.62.1",
     "tailwindcss": "^4.3.3"
   }

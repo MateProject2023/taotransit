@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import logo from '../assets/img/logo-footer-ink.svg';
 import bisma from '../assets/img/bisma-logo.png';
 import { footer, site, footerLegal } from '../content/landing';
+import { qrCode } from '../lib/qr';
 
 const href = (key: keyof typeof site) =>
   key === 'email' ? `mailto:${site.email}` : site[key];
@@ -10,6 +11,12 @@ const href = (key: keyof typeof site) =>
 /* Дорожка бегущей строки: два одинаковых набора, поэтому сдвиг на -50%
    в @keyframes попадает точно на стык и повтор не заметен. */
 const REPEAT = 8;
+
+/* QR канала считается здесь, на сборке, из того же адреса, что стоит в
+   ссылке рядом. Схема в подписи срезана: под кодом нужна не строка для
+   копирования, а то, что человек узнаёт глазом. */
+const channelQr = qrCode(site.channel);
+const channelLabel = site.channel.replace(/^https?:\/\//, '');
 ---
 
 {/*
@@ -71,6 +78,58 @@ const REPEAT = 8;
   </ul>
 
   <div class="site-container pb-28 sm:pb-24">
+    {/*
+      Телеграм-канал. Его адрес есть и полосой выше, но полоса — это ссылка,
+      а канал заказчик просил показать так, чтобы на него можно было
+      подписаться с телефона, не трогая экран, с которого читают. Отсюда пара:
+      код и подпись под ним.
+
+      Белая карточка на бумаге с волосяной рамкой — Правило белой карточки:
+      1.03:1 к бумаге само по себе объектом не читается.
+    */}
+    <div class="mt-14 rounded-3xl border border-line bg-white p-6 sm:mt-20 sm:p-10">
+      {/* Текст слева, код справа — тем же построением, что нижняя строка
+          футера: марка слева, авторство справа. На узком экране порядок
+          становится порядком чтения, заголовок первым. */}
+      <div class="flex flex-col items-center gap-8 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-10 sm:text-left">
+        <div class="max-w-(--container-prose)">
+          <h3 class="text-2xl leading-tight font-black sm:text-3xl">{footer.channel.title}</h3>
+          <p class="mt-3 text-base text-ink-muted text-pretty sm:text-lg">{footer.channel.body}</p>
+        </div>
+
+        <a
+          href={site.channel}
+          target="_blank"
+          rel="noopener"
+          class="group flex shrink-0 flex-col items-center gap-3 rounded-lg"
+        >
+          {/*
+            Код брендовый, а не чернильный: 10.71:1 на белом — сканеру этого
+            с запасом хватает (он порогует яркость, а не тон), а страница не
+            получает чёрного пятна там, где всё остальное фиолетовое.
+            Проверено чтением, а не на глаз: `scripts/qr-audit.mjs`.
+
+            Зона покоя в четыре модуля заложена внутрь viewBox, поэтому её
+            нельзя срезать вёрсткой. `crispEdges` — чтобы сглаживание не
+            размывало границы модулей на дробном масштабе.
+          */}
+          <svg
+            viewBox={`0 0 ${channelQr.size} ${channelQr.size}`}
+            class="size-36 text-brand sm:size-40"
+            shape-rendering="crispEdges"
+            data-qr
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={channelQr.d} fill="currentColor" />
+          </svg>
+          <span class="text-sm text-ink-muted underline decoration-[0.5px] underline-offset-4 transition-colors group-hover:text-ink">
+            {channelLabel}
+          </span>
+        </a>
+      </div>
+    </div>
+
     {/*
       Нижняя строка: марка слева, авторство справа, оба логотипа стоят на одной
       линии дна (`items-end`). «Created by» — подпись над логотипом бюро.

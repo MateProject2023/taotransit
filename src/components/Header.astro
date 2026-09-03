@@ -1,18 +1,23 @@
 ---
-import { nav } from '../content/landing';
+import { nav, footer, site } from '../content/landing';
+
+/* Ссылки контактов в меню ведут туда же, куда полосы в футере. Общий
+   источник, а не второй список: иначе адреса разъедутся при первой правке. */
+const href = (key: keyof typeof site) =>
+  key === 'email' ? `mailto:${site.email}` : site[key];
 ---
 
 {/*
-  Оригинал: «пилюля» поверх hero-видео, полупрозрачная, с блюром.
-  На узких экранах Тильда просто прятала три пункта из восьми — вместо этого
-  делаем ленту с горизонтальной прокруткой: композиция та же, пункты все.
+  Оригинал: «пилюля» поверх hero-видео, полупрозрачная, с блюром. На узких
+  экранах Тильда просто прятала три пункта из восьми.
 
-  Порог, на котором лента перестаёт быть лентой, — 1024px, а не 640.
-  Замер: восьми пунктам нужно 926px, а ширина колонки доходит до этого
-  только к 1024. На прежнем пороге в 640 лента переставала прокручиваться,
-  оставаясь при этом уже содержимого, и «Контакты» оказывались обрезаны
-  и недоступны на всём диапазоне от 640 до 1080 — ровно то, чего лента
-  и была призвана не допустить.
+  Мы вместо этого делали из пилюли ленту с горизонтальной прокруткой —
+  до десятого захода, где заказчик попросил бургер. Так и правильнее: о
+  скрытом содержимом лента сообщала одной маской у правого края, то есть
+  весь список открывался жестом, о котором никто не предупреждал.
+
+  Порог остался прежним — 1024px. Замер тот же: восьми пунктам нужно 926px,
+  и ширина колонки доходит до этого только к 1024.
 
   Пилюля белая, потому что шапка едет над обеими поверхностями: на фиолете
   она читается сама, на бумаге её очерчивает волосяная рамка — тот же приём
@@ -24,21 +29,100 @@ import { nav } from '../content/landing';
 */}
 <header class="fixed inset-x-0 top-0 z-50 pt-3 sm:pt-6">
   <div class="header-container">
+    {/*
+      До 1024px — бургер и панель под ним. Обёртка `relative`: панель
+      привязана к кнопке, а не к экрану, — из её угла она и вырастает.
+    */}
+    {/*
+      До 1024px — бургер и панель под ним.
+
+      <details>, а не кнопка с `hidden`: раскрытие, клавиатура и семантика
+      достаются бесплатно, и меню открывается даже без JS — тот же выбор,
+      что в аккордеоне «Услуги». Скрипт добавляет к этому только анимацию,
+      закрытие кликом мимо и по Escape.
+
+      `relative` на самом <details>: панель привязана к бургеру, а не к
+      экрану, — из её угла она и вырастает.
+    */}
+    <details class="group relative lg:hidden" data-nav>
+      <summary
+        aria-label="Меню"
+        class="flex size-12 cursor-pointer list-none items-center justify-center rounded-full bg-white/90 text-ink ring-1 ring-line backdrop-blur-md transition-colors duration-200 ease-out-quart marker:content-none group-open:bg-brand group-open:text-white group-open:ring-brand sm:size-14 [&::-webkit-details-marker]:hidden"
+      >
+        {/* Три штриха, сходящиеся в крест. Состояние читается из атрибута
+            `open` на <details>, второго источника правды нет. */}
+        <span class="relative block h-4 w-6" aria-hidden="true">
+          <span class="absolute inset-x-0 top-0 h-0.5 rounded-full bg-current transition-transform duration-200 ease-out-quart group-open:translate-y-[7px] group-open:rotate-45"></span>
+          <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-current transition-opacity duration-200 ease-out-quart group-open:opacity-0"></span>
+          <span class="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-current transition-transform duration-200 ease-out-quart group-open:-translate-y-[7px] group-open:-rotate-45"></span>
+        </span>
+      </summary>
+
+      {/*
+        Панель. Белая карточка с волосяной рамкой — тот же приём, что у
+        пилюли: теней в системе нет, приподнятость даёт белое на бумаге.
+        `origin-top-left` — точка роста; она же угол бургера.
+
+        max-h держит панель внутри экрана: восемь пунктов плюс контакты
+        не влезают в альбомную ориентацию телефона.
+      */}
+      <div
+        data-nav-panel
+        class="absolute top-[calc(100%+0.625rem)] left-0 max-h-[calc(100svh-6rem)] w-[min(20rem,calc(100vw-2rem))] origin-top-left overflow-y-auto rounded-3xl border border-line bg-white p-2"
+      >
+        <nav aria-label="Основная навигация">
+          <ul>
+            {
+              nav.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class="block rounded-xl px-4 py-2.5 font-black text-ink transition-colors duration-200 ease-out-quart hover:bg-brand hover:text-white"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+
+        {/* Разделитель, а не второй заголовок: ниже не разделы страницы,
+            а способы написать. Их вес заказчик просил снизить. */}
+        <hr class="mx-4 my-2 border-t border-line" />
+
+        <ul>
+          {
+            footer.links.map((link) => (
+              <li>
+                <a
+                  href={href(link.href as keyof typeof site)}
+                  {...link.href === 'email' ? {} : { target: '_blank', rel: 'noopener' }}
+                  class="block rounded-xl px-4 py-2 text-sm text-ink-muted transition-colors duration-200 ease-out-quart hover:bg-paper hover:text-ink"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </details>
+
+    {/* С 1024px — пилюля целиком, все восемь пунктов в строку. */}
     <nav
       aria-label="Основная навигация"
-      class="overflow-hidden rounded-full bg-white/90 ring-1 ring-line backdrop-blur-md"
+      class="hidden rounded-full bg-white/90 ring-1 ring-line backdrop-blur-md lg:block"
     >
-      <ul
-        class="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto px-2 py-2.5 text-sm whitespace-nowrap [mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] [scrollbar-width:none] sm:gap-2 sm:px-4 sm:py-4 sm:text-[0.9375rem] lg:justify-between lg:overflow-visible lg:px-6 lg:[mask-image:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <ul class="flex items-center justify-between gap-2 px-6 py-4 text-[0.9375rem] whitespace-nowrap">
         {
           nav.map((item) => (
-            <li class="snap-start">
+            <li>
               <a
                 href={item.href}
                 {/* Заказчик просил подсвечивать сам блок раздела, а не только
                     его текст: в оригинале менялся лишь цвет на фиолетовый. */}
-                class="block rounded-full px-3 py-1.5 font-black text-ink transition-colors hover:bg-brand hover:text-white lg:px-3.5"
+                class="block rounded-full px-3.5 py-1.5 font-black text-ink transition-colors hover:bg-brand hover:text-white"
               >
                 {item.label}
               </a>
