@@ -1,0 +1,84 @@
+---
+import { channel, site } from '../content/landing';
+import { qrCode } from '../lib/qr';
+import { telegramLabel } from '../lib/telegram';
+
+/* И код, и подпись считаются на сборке из одного адреса: под кодом нужна не
+   строка для копирования, а имя, которым канал ищут в телеграме. */
+const qr = qrCode(site.channel);
+const label = telegramLabel(site.channel);
+---
+
+{/*
+  Плитка канала. Стоит в конце «О нас», сразу за змейкой «Все началось
+  в 2013…»: история компании заканчивается, а канал — то место, где она
+  продолжается на этой неделе. Заказчик просил перенести её сюда с самого
+  низа страницы.
+
+  Секция бумажная, поэтому плитка — белая карточка с волосяной рамкой:
+  Правило белой карточки, 1.03:1 к бумаге само по себе объектом не читается.
+  Соседняя секция «Ценности» для неё не подошла бы — она залита брендовым,
+  а карточка внутри залитой секции там запрещена прямо.
+
+  Ссылок две и обе ведут в канал: заголовок поста — чтобы прочитать,
+  код — чтобы подписаться с телефона, глядя в чужой экран. Это разные
+  действия, поэтому и цели у них разные, хоть адрес и один.
+*/}
+<div class="mt-16 rounded-3xl border border-line bg-white p-6 sm:p-10 lg:mt-20">
+  <div class="flex flex-col items-center gap-8 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-12 sm:text-left">
+    <div class="max-w-(--container-prose)">
+      <h3 class="text-2xl leading-tight font-black sm:text-3xl">{channel.title}</h3>
+      <p class="mt-3 text-base text-ink-muted text-pretty sm:text-lg">{channel.body}</p>
+
+      {/* Волосяная линия, а не второй заголовок: ниже не новая тема, а
+          то же самое, только конкретно. */}
+      <hr class="my-6 border-t border-line" />
+
+      <p class="text-sm text-ink-muted">{channel.latestLabel}</p>
+      <a
+        href={site.channel}
+        target="_blank"
+        rel="noopener"
+        class="group mt-2 block rounded-sm"
+      >
+        <span class="text-lg leading-snug font-bold text-balance transition-colors group-hover:text-brand sm:text-xl">
+          {channel.latestTitle}
+        </span>
+        <span class="mt-2 block text-sm text-ink-muted text-pretty sm:text-base">
+          {channel.latestBody}
+        </span>
+      </a>
+    </div>
+
+    <a
+      href={site.channel}
+      target="_blank"
+      rel="noopener"
+      class="group flex shrink-0 flex-col items-center gap-3 rounded-lg"
+    >
+      {/*
+        Код брендовый, а не чернильный: 10.71:1 на белом — сканеру этого
+        с запасом хватает (он порогует яркость, а не тон), а страница не
+        получает чёрного пятна там, где всё остальное фиолетовое.
+        Проверено чтением, а не на глаз: `scripts/qr-audit.mjs`.
+
+        Зона покоя в четыре модуля заложена внутрь viewBox, поэтому её
+        нельзя срезать вёрсткой. `crispEdges` — чтобы сглаживание не
+        размывало границы модулей на дробном масштабе.
+      */}
+      <svg
+        viewBox={`0 0 ${qr.size} ${qr.size}`}
+        class="size-36 text-brand sm:size-40"
+        shape-rendering="crispEdges"
+        data-qr
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d={qr.d} fill="currentColor" />
+      </svg>
+      <span class="text-sm text-ink-muted underline decoration-[0.5px] underline-offset-4 transition-colors group-hover:text-ink">
+        {label}
+      </span>
+    </a>
+  </div>
+</div>

@@ -1,18 +1,6 @@
 ---
 import cover from '../assets/img/bot-video-cover.jpg';
 import { howToStart, site } from '../content/landing';
-import { qrCode } from '../lib/qr';
-import { telegramLabel } from '../lib/telegram';
-
-/* Второй код канала на странице. Первый — плитка в футере; здесь он мельче
-   и стоит рядом с кнопкой, потому что это то же самое место разговора:
-   бот — чтобы начать, канал — чтобы сначала посмотреть со стороны.
-
-   112px на 33 модуля — 3.4px на модуль. Меньше 3px камера телефона берёт
-   через раз, поэтому размер здесь снизу ограничен, а не выбран на глаз;
-   `scripts/qr-audit.mjs` читает код в его настоящем размере. */
-const channelQr = qrCode(site.channel);
-const channelLabel = telegramLabel(site.channel);
 ---
 
 {/*
@@ -94,50 +82,21 @@ const channelLabel = telegramLabel(site.channel);
         </p>
       </div>
 
-      {/* Кнопка в бота — одна: секция про него, а форма идёт следом отдельной
-          секцией, предлагать её здесь второй раз незачем.
+      {/* Одна кнопка, и она в бота: секция про него, а форма идёт следом
+          отдельной секцией — предлагать её здесь второй раз незачем.
 
-          Рядом с ней код канала. Это не второй призыв и спорить с кнопкой он
-          не должен: ни заливки, ни рамки, подпись вторичным серым — заказчик
-          просил вставить канал «аккуратно, без забора внимания». */}
-      <div class="flex flex-col items-start gap-6 sm:flex-row sm:items-center sm:gap-8 lg:col-start-1 lg:row-start-2">
-        <a
-          href={site.bot}
-          target="_blank"
-          rel="noopener"
-          class="cta cta-brand w-full text-lg sm:w-auto sm:min-w-[18rem]"
-        >
-          {howToStart.cta}
-        </a>
-
-        {/* Подпись под кодом, а не сбоку: сбоку блок вырастал до 568px и не
-            вставал рядом с кнопкой в колонку шириной 495px — строка
-            переносилась, и «тихий ход» оказывался отдельной ступенью
-            под кнопкой. Замер, а не догадка. */}
-        <a
-          href={site.channel}
-          target="_blank"
-          rel="noopener"
-          class="group flex shrink-0 flex-col items-center gap-2 rounded-lg"
-        >
-          <svg
-            viewBox={`0 0 ${channelQr.size} ${channelQr.size}`}
-            class="size-28 text-brand"
-            shape-rendering="crispEdges"
-            data-qr
-            aria-hidden="true"
-            focusable="false"
-          >
-            <path d={channelQr.d} fill="currentColor" />
-          </svg>
-          <span class="text-center text-sm leading-snug text-ink-muted">
-            {howToStart.channel}
-            <span class="block underline decoration-[0.5px] underline-offset-4 transition-colors group-hover:text-ink">
-              {channelLabel}
-            </span>
-          </span>
-        </a>
-      </div>
+          Код канала стоял здесь один заход и снят по просьбе заказчика:
+          рядом с роликом и кнопкой он оказался третьим предметом внимания
+          в блоке, где до этого было ровно одно действие. Витрина канала
+          осталась одна — плитка в «О нас». */}
+      <a
+        href={site.bot}
+        target="_blank"
+        rel="noopener"
+        class="cta cta-brand text-lg lg:col-start-1 lg:row-start-2 lg:min-w-[20rem] lg:justify-self-start"
+      >
+        {howToStart.cta}
+      </a>
     </div>
   </div>
 </section>

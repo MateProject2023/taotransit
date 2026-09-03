@@ -25,8 +25,9 @@ const widths = args.filter((a) => /^\d+$/.test(a)).map(Number);
 const WIDTHS = widths.length ? widths : [1440, 959, 479];
 
 /* Сколько кодов должно быть на странице. Число здесь затем, чтобы код,
-   потерянный вёрсткой, отличался от кода, которого и не было. */
-const EXPECTED_COUNT = 2;
+   потерянный вёрсткой, отличался от кода, которого и не было. Сейчас он один
+   — плитка канала в «О нас»; второй, у кнопки бота, снят заказчиком. */
+const EXPECTED_COUNT = 1;
 
 const browser = await chromium.launch();
 let failures = 0;

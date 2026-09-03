@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import founders from '../assets/img/about-founders.png';
 import { about } from '../content/landing';
 import { timelineGeometry as geo } from '../content/timeline-geometry';
+import ChannelCard from './ChannelCard.astro';
 ---
 
 <section id="aboutus" class="site-container scroll-mt-24 py-16 sm:py-20 lg:py-24">
@@ -150,6 +151,11 @@ import { timelineGeometry as geo } from '../content/timeline-geometry';
       }
     </ol>
   </div>
+
+  {/* Канал — сразу за змейкой: история компании заканчивается здесь,
+      а продолжается в канале. Перенесено с низа страницы по просьбе
+      заказчика. */}
+  <ChannelCard />
 </section>
 
 <style>
